@@ -1,0 +1,6 @@
+klasa pure virt Player -> GSTPlayer
+
+widget player, widget controls, widget subtitles
+
+singleton z opcjami
+stringi w tr()
