@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QUrl>
 #include "player.h"
+#include "controls.h"
 
 namespace Ui {
 class MainWindow;
@@ -31,9 +32,6 @@ private slots:
 	void gotoTime(qint64 time, bool pause=false);
 	void positionChanged();
 	void setState();
-	void on_pushButton_clicked();
-
-	void on_pushButton_2_clicked();
 };
 
 #endif // MAINWINDOW_H

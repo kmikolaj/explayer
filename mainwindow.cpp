@@ -8,8 +8,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	connect(ui->videoSurface, SIGNAL(positionChanged()), this, SLOT(positionChanged()));
-	connect(ui->videoSurface, SIGNAL(stateChanged()), this, SLOT(setState()));
+	connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionChanged()));
+	connect(ui->video, SIGNAL(stateChanged()), this, SLOT(setState()));
 
 	movieDir = ".";
 }
@@ -28,61 +28,76 @@ void MainWindow::openFile()
 
 void MainWindow::playFile(const QString &filename)
 {
-	ui->videoSurface->stop();
-	ui->videoSurface->setUri(filename);
-	ui->videoSurface->play();
+	ui->video->stop();
+	ui->video->setUri(filename);
+	ui->video->play();
 }
 
 void MainWindow::playUrl(const QUrl &url)
 {
-	ui->videoSurface->stop();
-	ui->videoSurface->setUri(url.toEncoded());
-	ui->videoSurface->play();
+	ui->video->stop();
+	ui->video->setUri(url.toEncoded());
+	ui->video->play();
 }
 
 void MainWindow::gotoFrame(qint64 frame, bool pause)
 {
-	if (ui->videoSurface->state() != QGst::StateNull)
+	if (ui->video->state() != QGst::StateNull)
 	{
-		double fps = ui->videoSurface->getMetaData().getFramerate();
+		double fps = ui->video->getMetaData().getFramerate();
 		double res = (double(frame) / fps) * 1000.0;
 
-		uint length = ui->videoSurface->length().msecsTo(QTime(0,0));
-	    if (length != 0)
+		if (ui->video->length() != QTime(0,0))
 		{
 	        QTime pos(0,0);
 			pos = pos.addMSecs(qint64(res));
 
-			ui->videoSurface->setPosition(pos, Accurate | Skip);
+			ui->video->setPosition(pos, Accurate | Skip);
 			if (pause)
-				ui->videoSurface->pause();
+				ui->video->pause();
 		}
 	}
 }
 
 void MainWindow::gotoTime(qint64 time, bool pause)
 {
-	if (ui->videoSurface->state() != QGst::StateNull)
+	if (ui->video->state() != QGst::StateNull)
 	{
-		uint length = ui->videoSurface->length().msecsTo(QTime(0,0));
+		uint length = ui->video->length().msecsTo(QTime(0,0));
 	    if (length != 0)
 		{
 	        QTime pos(0,0);
 //			pos = pos.addMSecs(qint64(res));
 
-			ui->videoSurface->setPosition(pos);
+			ui->video->setPosition(pos);
 			if (pause)
-				ui->videoSurface->pause();
+				ui->video->pause();
 		}
 	}
 }
 
 void MainWindow::positionChanged()
 {
-//	double pp = double(pos) / 1000.0;
-//	double fps = 23.976;
-//	double res = pp * fps;
-//	ui->statusBar->showMessage(QString::number(qint64(res)));
+	QTime pos(0,0);
+	QTime len(0,0);
+	double fps = 0.0;
+
+
+	if (ui->video->state() != QGst::StateReady &&
+        ui->video->state() != QGst::StateNull)
+	{
+		fps = ui->video->metadata().getFramerate();
+		pos = ui->video->position();
+		len = ui->video->length();
+	}
+
+	quint32 frame = double(-1 * pos.msecsTo(QTime(0,0))) * fps / 1000.0;
+	QString message = pos.toString("hh:mm:ss.zzz") + "/" + len.toString("hh:mm:ss.zzz");
+	message += " Frame: " + QString::number(frame);
+	message += " Name: " + ui->video->metadata().getFileName();
+	message += " Frames: " + QString::number(ui->video->metadata().getFrames());
+
+	ui->statusBar->showMessage(message);
 }
 
 void MainWindow::setState()
@@ -90,12 +105,12 @@ void MainWindow::setState()
 	//
 }
 
-void MainWindow::on_pushButton_clicked()
-{
-	openFile();
-}
+//void MainWindow::on_pushButton_clicked()
+//{
+//	openFile();
+//}
 
-void MainWindow::on_pushButton_2_clicked()
-{
-	gotoFrame(2870, true);
-}
+//void MainWindow::on_pushButton_2_clicked()
+//{
+//	gotoFrame(2870, true);
+//}

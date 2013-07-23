@@ -32,48 +32,55 @@
 #include <QGst/Caps>
 
 Player::Player(QWidget *parent)
-    : QGst::Ui::VideoWidget(parent)
+	: QGst::Ui::VideoWidget(parent)
 {
-    //this timer is used to tell the ui to change its position slider & label
-    //every 100 ms, but only when the pipeline is playing
-    connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
+	//this timer is used to tell the ui to change its position slider & label
+	//every 100 ms, but only when the pipeline is playing
+	connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
 }
 
 Player::~Player()
 {
-    if (pipeline) {
-        pipeline->setState(QGst::StateNull);
-        stopPipelineWatch();
-    }
+	if (pipeline)
+	{
+		pipeline->setState(QGst::StateNull);
+		stopPipelineWatch();
+	}
 }
 
-void Player::setUri(const QString & uri)
+void Player::setUri(const QString &uri)
 {
-    QString realUri = uri;
+	QString realUri = uri;
 
-    //if uri is not a real uri, assume it is a file path
-    if (realUri.indexOf("://") < 0) {
-        realUri = QUrl::fromLocalFile(realUri).toEncoded();
-    }
+	//if uri is not a real uri, assume it is a file path
+	if (realUri.indexOf("://") < 0)
+	{
+		realUri = QUrl::fromLocalFile(realUri).toEncoded();
+	}
 
-    if (!pipeline) {
-        pipeline = QGst::ElementFactory::make("playbin2").dynamicCast<QGst::Pipeline>();
-        if (pipeline) {
-            //let the video widget watch the pipeline for new video sinks
-            watchPipeline(pipeline);
+	if (!pipeline)
+	{
+		pipeline = QGst::ElementFactory::make("playbin2").dynamicCast<QGst::Pipeline>();
+		if (pipeline)
+		{
+			//let the video widget watch the pipeline for new video sinks
+			watchPipeline(pipeline);
 
-            //watch the bus for messages
-            QGst::BusPtr bus = pipeline->bus();
-            bus->addSignalWatch();
-            QGlib::connect(bus, "message", this, &Player::onBusMessage);
-        } else {
-            qCritical() << "Failed to create the pipeline";
-        }
-    }
+			//watch the bus for messages
+			QGst::BusPtr bus = pipeline->bus();
+			bus->addSignalWatch();
+			QGlib::connect(bus, "message", this, &Player::onBusMessage);
+		}
+		else
+		{
+			qCritical() << "Failed to create the pipeline";
+		}
+	}
 
-    if (pipeline) {
+	if (pipeline)
+	{
 		this->uri = realUri;
-        pipeline->setProperty("uri", realUri);
+		pipeline->setProperty("uri", realUri);
 		meta = getMetaData();
 	}
 }
@@ -82,16 +89,19 @@ MetaData Player::getMetaData()
 {
 	if (pipeline)
 	{
-	    // create a discoverer
-	    QGst::DiscovererPtr discoverer = QGst::Discoverer::create(QGst::ClockTime::fromSeconds(1));
-	    QGst::DiscovererInfoPtr info;
+		// create a discoverer
+		QGst::DiscovererPtr discoverer = QGst::Discoverer::create(QGst::ClockTime::fromSeconds(1));
+		QGst::DiscovererInfoPtr info;
 
-	    try {
-	        info = discoverer->discoverUri(uri);
+		try
+		{
+			info = discoverer->discoverUri(uri);
 			return MetaData(info);
-	    } catch(const QGlib::Error &error) {
+		}
+		catch (const QGlib::Error &error)
+		{
 			qDebug() << "Dupa";
-	    }
+		}
 
 	}
 	return MetaData();
@@ -99,18 +109,19 @@ MetaData Player::getMetaData()
 
 QTime Player::position() const
 {
-    if (pipeline) {
-        //here we query the pipeline about its position
-        //and we request that the result is returned in time format
-        QGst::PositionQueryPtr query = QGst::PositionQuery::create(QGst::FormatTime);
-        pipeline->query(query);
-        return QGst::ClockTime(query->position()).toTime();
-    } else {
-        return QTime(0,0);
-    }
+	if (pipeline)
+	{
+		QGst::PositionQueryPtr query = QGst::PositionQuery::create(QGst::FormatTime);
+		pipeline->query(query);
+		return QGst::ClockTime(query->position()).toTime();
+	}
+	else
+	{
+		return QTime(0, 0);
+	}
 }
 
-void Player::setPosition(const QTime & pos, SeekFlag flag)
+void Player::setPosition(const QTime &pos, SeekFlag flag)
 {
 	if (pipeline)
 	{
@@ -121,10 +132,10 @@ void Player::setPosition(const QTime & pos, SeekFlag flag)
 			flags |= QGst::SeekFlagSkip;
 
 		QGst::SeekEventPtr evt = QGst::SeekEvent::create(
-			1.0, QGst::FormatTime, flags,
-			QGst::SeekTypeSet, QGst::ClockTime::fromTime(pos),
-			QGst::SeekTypeNone, QGst::ClockTime::None
-		);
+		                             1.0, QGst::FormatTime, flags,
+		                             QGst::SeekTypeSet, QGst::ClockTime::fromTime(pos),
+		                             QGst::SeekTypeNone, QGst::ClockTime::None
+		                         );
 
 		pipeline->sendEvent(evt);
 	}
@@ -132,109 +143,116 @@ void Player::setPosition(const QTime & pos, SeekFlag flag)
 
 int Player::volume() const
 {
-    if (pipeline) {
-        QGst::StreamVolumePtr svp =
-            pipeline.dynamicCast<QGst::StreamVolume>();
+	if (pipeline)
+	{
+		QGst::StreamVolumePtr svp =
+		    pipeline.dynamicCast<QGst::StreamVolume>();
 
-        if (svp) {
-            return svp->volume(QGst::StreamVolumeFormatCubic) * 10;
-        }
-    }
+		if (svp)
+		{
+			return svp->volume(QGst::StreamVolumeFormatCubic) * 10;
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
 
 void Player::setVolume(int volume)
 {
-    if (pipeline) {
-        QGst::StreamVolumePtr svp =
-            pipeline.dynamicCast<QGst::StreamVolume>();
+	if (pipeline)
+	{
+		QGst::StreamVolumePtr svp =
+		    pipeline.dynamicCast<QGst::StreamVolume>();
 
-        if(svp) {
-            svp->setVolume((double)volume / 10, QGst::StreamVolumeFormatCubic);
-        }
-    }
+		if (svp)
+		{
+			svp->setVolume((double)volume / 10, QGst::StreamVolumeFormatCubic);
+		}
+	}
 }
 
 QTime Player::length() const
 {
-    if (pipeline) {
-        //here we query the pipeline about the content's duration
-        //and we request that the result is returned in time format
-        QGst::DurationQueryPtr query = QGst::DurationQuery::create(QGst::FormatTime);
-        pipeline->query(query);
-        return QGst::ClockTime(query->duration()).toTime();
-    } else {
-        return QTime(0,0);
-    }
+	return (meta.isValid() ? meta.getDuration() : QTime(0, 0));
 }
 
 QGst::State Player::state() const
 {
-    return pipeline ? pipeline->currentState() : QGst::StateNull;
+	return pipeline ? pipeline->currentState() : QGst::StateNull;
+}
+
+MetaData Player::metadata() const
+{
+	return meta;
 }
 
 void Player::play()
 {
-    if (pipeline) {
-        pipeline->setState(QGst::StatePlaying);
-    }
+	if (pipeline)
+	{
+		pipeline->setState(QGst::StatePlaying);
+	}
 }
 
 void Player::pause()
 {
-    if (pipeline) {
-        pipeline->setState(QGst::StatePaused);
-    }
+	if (pipeline)
+	{
+		pipeline->setState(QGst::StatePaused);
+	}
 }
 
 void Player::stop()
 {
-    if (pipeline) {
-        pipeline->setState(QGst::StateNull);
+	if (pipeline)
+	{
+		pipeline->setState(QGst::StateNull);
 
-        //once the pipeline stops, the bus is flushed so we will
-        //not receive any StateChangedMessage about this.
-        //so, to inform the ui, we have to emit this signal manually.
-        emit stateChanged();
-    }
+		//once the pipeline stops, the bus is flushed so we will
+		//not receive any StateChangedMessage about this.
+		//so, to inform the ui, we have to emit this signal manually.
+		emit stateChanged();
+	}
 }
 
-void Player::onBusMessage(const QGst::MessagePtr & message)
+void Player::onBusMessage(const QGst::MessagePtr &message)
 {
-    switch (message->type()) {
-    case QGst::MessageEos: //End of stream. We reached the end of the file.
-        stop();
-        break;
-    case QGst::MessageError: //Some error occurred.
-        qCritical() << message.staticCast<QGst::ErrorMessage>()->error();
-        stop();
-        break;
-    case QGst::MessageStateChanged: //The element in message->source() has changed state
-        if (message->source() == pipeline) {
-            handlePipelineStateChange(message.staticCast<QGst::StateChangedMessage>());
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr & scm)
-{
-    switch (scm->newState()) {
-    case QGst::StatePlaying:
-        //start the timer when the pipeline starts playing
-        positionTimer.start(100);
-        break;
-    case QGst::StatePaused:
-        //stop the timer when the pipeline pauses
-        if(scm->oldState() == QGst::StatePlaying)
+	switch (message->type())
+	{
+	case QGst::MessageEos: //End of stream. We reached the end of the file.
+		stop();
+		break;
+	case QGst::MessageError: //Some error occurred.
+		qCritical() << message.staticCast<QGst::ErrorMessage>()->error();
+		stop();
+		break;
+	case QGst::MessageStateChanged: //The element in message->source() has changed state
+		if (message->source() == pipeline)
 		{
-            positionTimer.stop();
-        }
-		else if(scm->oldState() == QGst::StateReady)
+			handlePipelineStateChange(message.staticCast<QGst::StateChangedMessage>());
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
+{
+	switch (scm->newState())
+	{
+	case QGst::StatePlaying:
+		//start the timer when the pipeline starts playing
+		positionTimer.start(100);
+		break;
+	case QGst::StatePaused:
+		//stop the timer when the pipeline pauses
+		if (scm->oldState() == QGst::StatePlaying)
+		{
+			positionTimer.stop();
+		}
+		else if (scm->oldState() == QGst::StateReady)
 		{
 			QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
 			if (sink)
@@ -243,22 +261,32 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr & scm)
 				proxy->childByIndex(0)->setProperty("force-aspect-ratio", true);
 			}
 		}
-        break;
-    default:
-        break;
-    }
+		break;
+	default:
+		break;
+	}
 
-    emit stateChanged();
+	emit stateChanged();
 }
 
 
-double MetaData::getFramerate()
+MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : valid(false), info(_info)
 {
-	QGst::DiscovererVideoInfoPtr videoInfo;
 	if (info->videoStreams().size() > 0)
 	{
 		videoInfo = info->videoStreams()[0].dynamicCast<QGst::DiscovererVideoInfo>();
-		return double(videoInfo->framerate().numerator) / double(videoInfo->framerate().denominator);
+
+		framerate = double(videoInfo->framerate().numerator) /
+		            double(videoInfo->framerate().denominator);
+		duration = QGst::ClockTime(info->duration()).toTime();
+		frames = duration.hour() * 3600 + duration.minute() * 60 + duration.second();
+		frames = quint64(frames * framerate + 0.5);
+
+		filename = info->uri().toLocalFile();
+		QFile file(filename);
+		if (file.open(QIODevice::ReadOnly))
+			size = file.size();
+
+		valid = true;
 	}
-	return 0.0;
 }

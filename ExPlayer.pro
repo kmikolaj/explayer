@@ -17,12 +17,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    player.cpp
+    player.cpp \
+    controls.cpp
 
 HEADERS  += mainwindow.h \
-    player.h
+    player.h \
+    controls.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    controls.ui
 
 OTHER_FILES += \
     README

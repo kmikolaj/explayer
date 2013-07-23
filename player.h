@@ -37,11 +37,22 @@ class MetaData
 {
 public:
 	MetaData() : valid(false) {}
-	MetaData(const QGst::DiscovererInfoPtr& _info) : valid(true), info(_info) {}
-	double getFramerate();
+	MetaData(const QGst::DiscovererInfoPtr& _info);
+	double getFramerate() const {return framerate; }
+	QTime getDuration() const { return duration; }
+	quint32 getFrames() const { return frames; }
+	quint64 getSize() const { return size; }
+	QString getFileName() const { return filename; }
+	bool isValid() const { return valid; }
 private:
 	QGst::DiscovererInfoPtr info;
+	QGst::DiscovererVideoInfoPtr videoInfo;
 	bool valid;
+	double framerate;
+	QTime duration;
+	quint64 frames;
+	quint64 size;
+	QString filename;
 };
 
 class Player : public QGst::Ui::VideoWidget
@@ -58,8 +69,9 @@ public:
     void setPosition(const QTime & pos, SeekFlag flag=None);
     int volume() const;
 
-    QTime length() const;
     QGst::State state() const;
+    QTime length() const;
+	MetaData metadata() const;
 
 public slots:
     void play();
