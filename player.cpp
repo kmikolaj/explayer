@@ -81,11 +81,29 @@ void Player::setUri(const QString &uri)
 	{
 		this->uri = realUri;
 		pipeline->setProperty("uri", realUri);
-		meta = getMetaData();
+		extractMetaData();
 	}
 }
 
-MetaData Player::getMetaData()
+void Player::setSubtitles(const QString &sub, const QString &font, const QString &enc)
+{
+	QString realUri = sub;
+
+	//if uri is not a real uri, assume it is a file path
+	if (realUri.indexOf("://") < 0)
+	{
+		realUri = QUrl::fromLocalFile(realUri).toEncoded();
+	}
+
+	if (pipeline)
+	{
+		pipeline->setProperty("suburi", realUri);
+		pipeline->setProperty("subtitle-encoding", enc);
+		pipeline->setProperty("subtitle-font-desc", font);
+	}
+}
+
+void Player::extractMetaData()
 {
 	if (pipeline)
 	{
@@ -96,15 +114,15 @@ MetaData Player::getMetaData()
 		try
 		{
 			info = discoverer->discoverUri(uri);
-			return MetaData(info);
+			meta = MetaData(info);
+			return;
 		}
 		catch (const QGlib::Error &error)
 		{
-			qDebug() << "Dupa";
+			qDebug() << "Failed to discover metadata";
 		}
-
 	}
-	return MetaData();
+	meta = MetaData();
 }
 
 QTime Player::position() const
@@ -119,6 +137,16 @@ QTime Player::position() const
 	{
 		return QTime(0, 0);
 	}
+}
+
+quint64 Player::currentframe() const
+{
+	quint64 frame = 0;
+	if (pipeline)
+	{
+		frame = toFrame(position());
+	}
+	return frame;
 }
 
 void Player::setPosition(const QTime &pos, SeekFlag flag)
@@ -157,7 +185,6 @@ int Player::volume() const
 	return 0;
 }
 
-
 void Player::setVolume(int volume)
 {
 	if (pipeline)
@@ -170,6 +197,16 @@ void Player::setVolume(int volume)
 			svp->setVolume((double)volume / 10, QGst::StreamVolumeFormatCubic);
 		}
 	}
+}
+
+void Player::forceaspectratio()
+{
+	//
+}
+
+void Player::togglesubtitles()
+{
+	//
 }
 
 QTime Player::length() const
@@ -203,6 +240,21 @@ void Player::pause()
 	}
 }
 
+void Player::toggle()
+{
+	switch (state())
+	{
+	case QGst::StatePlaying:
+		pause();
+		break;
+	case QGst::StatePaused:
+		play();
+		break;
+	default:
+		break;
+	}
+}
+
 void Player::stop()
 {
 	if (pipeline)
@@ -213,6 +265,15 @@ void Player::stop()
 		//not receive any StateChangedMessage about this.
 		//so, to inform the ui, we have to emit this signal manually.
 		emit stateChanged();
+	}
+}
+
+void Player::gotoframe(quint64 frame)
+{
+	if (pipeline)
+	{
+		if (state() == QGst::StatePlaying)
+			pause();
 	}
 }
 
@@ -252,7 +313,7 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 		{
 			positionTimer.stop();
 		}
-		else if (scm->oldState() == QGst::StateReady)
+	case QGst::StateReady:
 		{
 			QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
 			if (sink)
@@ -270,7 +331,7 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 }
 
 
-MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : valid(false), info(_info)
+MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info), valid(false)
 {
 	if (info->videoStreams().size() > 0)
 	{
@@ -289,4 +350,11 @@ MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : valid(false), info(_i
 
 		valid = true;
 	}
+}
+
+quint64 Player::toFrame(const QTime &time) const
+{
+	quint64 frame = time.hour() * 3600 + time.minute() * 60 + time.second();
+	double framerate = meta.getFramerate();
+	return quint64(frame * framerate + 0.5);
 }

@@ -1,0 +1,5 @@
+.*
+!.gitignore
+ExPlayer.pro.user
+cscope.out
+*.swp

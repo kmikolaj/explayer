@@ -58,14 +58,16 @@ private:
 class Player : public QGst::Ui::VideoWidget
 {
     Q_OBJECT
+
 public:
     Player(QWidget *parent = 0);
     ~Player();
 
     void setUri(const QString & uri);
-	MetaData getMetaData();
+    void setSubtitles(const QString & sub, const QString & font, const QString & enc);
 
     QTime position() const;
+	quint64 currentframe() const;
     void setPosition(const QTime & pos, SeekFlag flag=None);
     int volume() const;
 
@@ -76,8 +78,12 @@ public:
 public slots:
     void play();
     void pause();
+	void toggle();
     void stop();
+	void gotoframe(quint64 frame);
     void setVolume(int volume);
+	void forceaspectratio();
+	void togglesubtitles();
 
 signals:
     void positionChanged();
@@ -86,6 +92,8 @@ signals:
 private:
     void onBusMessage(const QGst::MessagePtr & message);
     void handlePipelineStateChange(const QGst::StateChangedMessagePtr & scm);
+	quint64 toFrame(const QTime& time) const;
+	void extractMetaData();
 
     QGst::PipelinePtr pipeline;
 	QUrl uri;

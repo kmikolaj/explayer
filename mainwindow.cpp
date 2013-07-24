@@ -8,10 +8,25 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 
+	settings = Settings::GetSettings(this);
+
 	connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionChanged()));
 	connect(ui->video, SIGNAL(stateChanged()), this, SLOT(setState()));
 
+	connect(ui->controls, SIGNAL(play()), ui->video, SLOT(play()));
+	connect(ui->controls, SIGNAL(pause()), ui->video, SLOT(pause()));
+	connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
+	connect(ui->controls, SIGNAL(open()), this, SLOT(open()));
+
 	movieDir = ".";
+
+	// hotkeys
+	addHotkey("Space", ui->video, SLOT(toggle()));
+	addHotkey("f", this, SLOT(fullScreen()));
+//	addHotkey("s", this, SLOT(subtitles()));
+
+	// on start
+	on_editor_cursorPositionChanged();
 }
 
 MainWindow::~MainWindow()
@@ -30,6 +45,8 @@ void MainWindow::playFile(const QString &filename)
 {
 	ui->video->stop();
 	ui->video->setUri(filename);
+	QString subfilename = filename.left(filename.lastIndexOf('.')) + ".txt";
+	ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
 	ui->video->play();
 }
 
@@ -40,11 +57,18 @@ void MainWindow::playUrl(const QUrl &url)
 	ui->video->play();
 }
 
+void MainWindow::addHotkey(const QString &key, const QObject *obj, const char *slot)
+{
+	QShortcut *shortcut = new QShortcut(QKeySequence(key), this);
+	hotkeys.append(shortcut);
+	connect(shortcut, SIGNAL(activated()), obj, slot);
+}
+
 void MainWindow::gotoFrame(qint64 frame, bool pause)
 {
 	if (ui->video->state() != QGst::StateNull)
 	{
-		double fps = ui->video->getMetaData().getFramerate();
+		double fps = ui->video->metadata().getFramerate();
 		double res = (double(frame) / fps) * 1000.0;
 
 		if (ui->video->length() != QTime(0,0))
@@ -52,7 +76,7 @@ void MainWindow::gotoFrame(qint64 frame, bool pause)
 	        QTime pos(0,0);
 			pos = pos.addMSecs(qint64(res));
 
-			ui->video->setPosition(pos, Accurate | Skip);
+			ui->video->setPosition(pos, SeekFlag(Accurate | Skip));
 			if (pause)
 				ui->video->pause();
 		}
@@ -105,12 +129,38 @@ void MainWindow::setState()
 	//
 }
 
-//void MainWindow::on_pushButton_clicked()
-//{
-//	openFile();
-//}
+void MainWindow::open()
+{
+	openFile();
+}
 
-//void MainWindow::on_pushButton_2_clicked()
-//{
+void MainWindow::fullScreen()
+{
+	setWindowState(windowState() ^ Qt::WindowFullScreen);
+
+	if (isFullScreen())
+	{
+		ui->controls->hide();
+		ui->statusBar->hide();
+	}
+	else
+	{
+		ui->controls->show();
+		ui->statusBar->show();
+	}
+}
+
+//	openFile();
 //	gotoFrame(2870, true);
-//}
+
+void MainWindow::on_editor_cursorPositionChanged()
+{
+	QTextEdit::ExtraSelection highlight;
+	highlight.cursor = ui->editor->textCursor();
+	highlight.format.setProperty(QTextFormat::FullWidthSelection, true);
+	highlight.format.setBackground( Qt::green );
+
+	QList<QTextEdit::ExtraSelection> extras;
+	extras << highlight;
+	ui->editor->setExtraSelections( extras );
+}
