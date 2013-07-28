@@ -18,15 +18,19 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
 	connect(ui->controls, SIGNAL(open()), this, SLOT(open()));
 
-	movieDir = ".";
+	movieDir = settings->Gui.VideoDir;
 
 	// hotkeys
 	addHotkey("Space", ui->video, SLOT(toggle()));
 	addHotkey("f", this, SLOT(fullScreen()));
-//	addHotkey("s", this, SLOT(subtitles()));
+	addHotkey("Tab", this, SLOT(toggleeditor()));
+	addHotkey("s", ui->video, SLOT(togglesubtitles()));
+	addHotkey("r", ui->video, SLOT(forceaspectratio()));
 
 	// on start
 	on_editor_cursorPositionChanged();
+	if (!(editor = settings->Gui.Editor))
+		ui->editor->hide();
 }
 
 MainWindow::~MainWindow()
@@ -53,7 +57,7 @@ void MainWindow::playFile(const QString &filename)
 void MainWindow::playUrl(const QUrl &url)
 {
 	ui->video->stop();
-	ui->video->setUri(url.toEncoded());
+	ui->video->setUri(url.toString());
 	ui->video->play();
 }
 
@@ -134,23 +138,40 @@ void MainWindow::open()
 	openFile();
 }
 
+void MainWindow::toggleeditor()
+{
+	if (editor)
+		ui->editor->hide();
+	else
+		ui->editor->show();
+	editor = !editor;
+}
+
 void MainWindow::fullScreen()
 {
 	setWindowState(windowState() ^ Qt::WindowFullScreen);
 
+	static bool a = !settings->Gui.ControlBar;
+	static bool b = !settings->Gui.StatusBar;
+	static bool c = !settings->Gui.Editor;
+
 	if (isFullScreen())
 	{
+		a = ui->controls->isHidden();
+		b = ui->statusBar->isHidden();
+		c = ui->editor->isHidden();
 		ui->controls->hide();
 		ui->statusBar->hide();
+		ui->editor->hide();
 	}
 	else
 	{
-		ui->controls->show();
-		ui->statusBar->show();
+		if (!a) ui->controls->show();
+		if (!b) ui->statusBar->show();
+		if (!c) ui->editor->show();
 	}
 }
 
-//	openFile();
 //	gotoFrame(2870, true);
 
 void MainWindow::on_editor_cursorPositionChanged()
@@ -158,9 +179,9 @@ void MainWindow::on_editor_cursorPositionChanged()
 	QTextEdit::ExtraSelection highlight;
 	highlight.cursor = ui->editor->textCursor();
 	highlight.format.setProperty(QTextFormat::FullWidthSelection, true);
-	highlight.format.setBackground( Qt::green );
+	highlight.format.setBackground(Qt::green);
 
 	QList<QTextEdit::ExtraSelection> extras;
 	extras << highlight;
-	ui->editor->setExtraSelections( extras );
+	ui->editor->setExtraSelections(extras);
 }

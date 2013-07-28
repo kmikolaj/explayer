@@ -19,12 +19,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     player.cpp \
     controls.cpp \
-    settings.cpp
+    settings.cpp \
+    osd.cpp
 
 HEADERS  += mainwindow.h \
     player.h \
     controls.h \
-    settings.h
+    settings.h \
+    osd.h
 
 FORMS    += mainwindow.ui \
     controls.ui

@@ -31,6 +31,7 @@ private:
 	Settings *settings;
 	QString movieDir;
 	QVector<QShortcut *> hotkeys;
+	bool editor;
 
 private slots:
 	void gotoFrame(qint64 frame, bool pause=false);
@@ -38,6 +39,7 @@ private slots:
 	void positionChanged();
 	void setState();
 	void open();
+	void toggleeditor();
 	void fullScreen();
 	void on_editor_cursorPositionChanged();
 };

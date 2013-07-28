@@ -12,6 +12,10 @@ public:
 	struct
 	{
 		QString Output;
+		bool VAAPI;
+		bool ForceAspectRatio;
+		double PixelAspectRatio;
+		bool Subtitles;
 	} Video;
 
 	struct
@@ -24,6 +28,16 @@ public:
 		QString Font;
 		QString Encoding;
 	} Subtitles;
+
+	struct
+	{
+		QString VideoDir;
+		bool Osd;
+		bool ControlBar;
+		bool StatusBar;
+		bool MenuBar;
+		bool Editor;
+	} Gui;
 
 private:
 	Settings(QObject *parent = 0);

@@ -1,27 +1,8 @@
-/*
-    Copyright (C) 2010 Marco Ballesio <gibrovacco@gmail.com>
-    Copyright (C) 2011 Collabora Ltd.
-      @author George Kiagiadakis <george.kiagiadakis@collabora.co.uk>
-
-    This library is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published
-    by the Free Software Foundation; either version 2.1 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
 #include "player.h"
 #include <QDir>
 #include <QUrl>
 #include <QGlib/Connect>
 #include <QGlib/Error>
-#include <QGst/Pipeline>
 #include <QGst/ElementFactory>
 #include <QGst/Bus>
 #include <QGst/Message>
@@ -37,6 +18,9 @@ Player::Player(QWidget *parent)
 	//this timer is used to tell the ui to change its position slider & label
 	//every 100 ms, but only when the pipeline is playing
 	connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
+	settings = Settings::GetSettings(this);
+	subtitles = settings->Video.Subtitles;
+	aspectratio = settings->Video.ForceAspectRatio;
 }
 
 Player::~Player()
@@ -55,12 +39,16 @@ void Player::setUri(const QString &uri)
 	//if uri is not a real uri, assume it is a file path
 	if (realUri.indexOf("://") < 0)
 	{
-		realUri = QUrl::fromLocalFile(realUri).toEncoded();
+		realUri = QUrl::fromLocalFile(realUri).toString();
 	}
 
 	if (!pipeline)
 	{
 		pipeline = QGst::ElementFactory::make("playbin2").dynamicCast<QGst::Pipeline>();
+		osd = new Osd(pipeline, this);
+		if (settings->Gui.Osd)
+			osd->enable();
+
 		if (pipeline)
 		{
 			//let the video widget watch the pipeline for new video sinks
@@ -79,8 +67,8 @@ void Player::setUri(const QString &uri)
 
 	if (pipeline)
 	{
-		this->uri = realUri;
-		pipeline->setProperty("uri", realUri);
+		videouri = realUri;
+		pipeline->setProperty("uri", videouri);
 		extractMetaData();
 	}
 }
@@ -92,12 +80,16 @@ void Player::setSubtitles(const QString &sub, const QString &font, const QString
 	//if uri is not a real uri, assume it is a file path
 	if (realUri.indexOf("://") < 0)
 	{
-		realUri = QUrl::fromLocalFile(realUri).toEncoded();
+		realUri = QUrl::fromLocalFile(realUri).toString();
 	}
 
 	if (pipeline)
 	{
-		pipeline->setProperty("suburi", realUri);
+		suburi = realUri;
+		if (subtitles)
+		{
+			pipeline->setProperty("suburi", suburi);
+		}
 		pipeline->setProperty("subtitle-encoding", enc);
 		pipeline->setProperty("subtitle-font-desc", font);
 	}
@@ -113,7 +105,7 @@ void Player::extractMetaData()
 
 		try
 		{
-			info = discoverer->discoverUri(uri);
+			info = discoverer->discoverUri(videouri);
 			meta = MetaData(info);
 			return;
 		}
@@ -201,12 +193,39 @@ void Player::setVolume(int volume)
 
 void Player::forceaspectratio()
 {
-	//
+	aspectratio = !aspectratio;
+	QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
+	if (sink)
+	{
+		QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
+		proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
+	}
+	if (aspectratio)
+	{
+		osd->setText("force aspect ratio");
+	}
+	else
+	{
+		osd->setText("no force aspect ratio");
+	}
+	this->repaint();
 }
 
 void Player::togglesubtitles()
 {
-	//
+	// does not work
+	// https://bugzilla.gnome.org/show_bug.cgi?id=589515
+	if (subtitles)
+	{
+		osd->setText("no subtitles");
+		pipeline->setProperty("suburi", NULL);
+	}
+	else
+	{
+		osd->setText("subtitles");
+		pipeline->setProperty("suburi", suburi);
+	}
+	subtitles = !subtitles;
 }
 
 QTime Player::length() const
@@ -260,10 +279,6 @@ void Player::stop()
 	if (pipeline)
 	{
 		pipeline->setState(QGst::StateNull);
-
-		//once the pipeline stops, the bus is flushed so we will
-		//not receive any StateChangedMessage about this.
-		//so, to inform the ui, we have to emit this signal manually.
 		emit stateChanged();
 	}
 }
@@ -319,7 +334,7 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 			if (sink)
 			{
 				QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
-				proxy->childByIndex(0)->setProperty("force-aspect-ratio", true);
+				proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
 			}
 		}
 		break;
