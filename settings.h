@@ -7,7 +7,7 @@
 class Settings : public QObject
 {
 public:
-	static Settings* GetSettings(QObject *parent = 0);
+	static Settings *GetSettings(QObject *parent = 0);
 
 	struct
 	{
@@ -16,6 +16,9 @@ public:
 		bool ForceAspectRatio;
 		double PixelAspectRatio;
 		bool Subtitles;
+		int SeekShort;
+		int SeekMid;
+		int SeekLong;
 	} Video;
 
 	struct

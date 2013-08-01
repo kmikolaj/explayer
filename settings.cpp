@@ -1,8 +1,8 @@
 #include "settings.h"
 
-Settings* Settings::GetSettings(QObject *parent)
+Settings *Settings::GetSettings(QObject *parent)
 {
-	static Settings* settings = NULL;
+	static Settings *settings = NULL;
 	if (!settings)
 	{
 		settings = new Settings(parent);
@@ -27,6 +27,9 @@ void Settings::setDefault()
 	Video.ForceAspectRatio = true;
 	Video.PixelAspectRatio = 1.0;
 	Video.Subtitles = true;
+	Video.SeekShort = 5;
+	Video.SeekMid = 60;
+	Video.SeekLong = 600;
 
 	// audio
 	Audio.Output = "alsa";

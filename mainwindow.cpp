@@ -2,21 +2,24 @@
 #include "ui_mainwindow.h"
 #include <QFileDialog>
 
+#include <QPainter>
+
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+	QMainWindow(parent),
+	ui(new Ui::MainWindow)
 {
 	ui->setupUi(this);
 
 	settings = Settings::GetSettings(this);
 
-	connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionChanged()));
-	connect(ui->video, SIGNAL(stateChanged()), this, SLOT(setState()));
+	connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
+	connect(ui->video, SIGNAL(stateChanged()), this, SLOT(stateUpdate()));
 
 	connect(ui->controls, SIGNAL(play()), ui->video, SLOT(play()));
 	connect(ui->controls, SIGNAL(pause()), ui->video, SLOT(pause()));
 	connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
 	connect(ui->controls, SIGNAL(open()), this, SLOT(open()));
+	connect(ui->controls, SIGNAL(volumeChanged(int)), ui->video, SLOT(setVolume(int)));
 
 	movieDir = settings->Gui.VideoDir;
 
@@ -26,9 +29,15 @@ MainWindow::MainWindow(QWidget *parent) :
 	addHotkey("Tab", this, SLOT(toggleeditor()));
 	addHotkey("s", ui->video, SLOT(togglesubtitles()));
 	addHotkey("r", ui->video, SLOT(forceaspectratio()));
+	addHotkey("Right", this, SLOT(seekForward()));
+	addHotkey("Left", this, SLOT(seekBackward()));
+	addHotkey("h", this, SLOT(volumeUp()));
+	addHotkey("g", this, SLOT(jump()));
+	addHotkey(".", this, SLOT(nextFrame()));
+	addHotkey(",", this, SLOT(prevFrame()));
 
 	// on start
-	on_editor_cursorPositionChanged();
+	positionUpdate();
 	if (!(editor = settings->Gui.Editor))
 		ui->editor->hide();
 }
@@ -68,19 +77,27 @@ void MainWindow::addHotkey(const QString &key, const QObject *obj, const char *s
 	connect(shortcut, SIGNAL(activated()), obj, slot);
 }
 
-void MainWindow::gotoFrame(qint64 frame, bool pause)
+void MainWindow::seek(int seconds)
+{
+	GstTime newPos = ui->video->position();
+	newPos.moveMsec(1000 * seconds);
+	if (newPos.Time >= QTime(0,0) && newPos.Time <= ui->video->length().Time)
+	{
+//		ui->video->setPosition(newPos, SeekFlag(Accurate));
+		ui->video->setPosition(newPos);
+		updateStatus(newPos, ui->video->length());
+	}
+}
+
+void MainWindow::gotoFrame(qint32 frame, bool pause)
 {
 	if (ui->video->state() != QGst::StateNull)
 	{
-		double fps = ui->video->metadata().getFramerate();
-		double res = (double(frame) / fps) * 1000.0;
-
-		if (ui->video->length() != QTime(0,0))
+		GstTime newPos = GstTime(frame);
+		if (ui->video->length().Time > QTime(0,0))
 		{
-	        QTime pos(0,0);
-			pos = pos.addMSecs(qint64(res));
-
-			ui->video->setPosition(pos, SeekFlag(Accurate | Skip));
+			ui->video->setPosition(newPos, SeekFlag(Accurate | Skip));
+			updateStatus(newPos, ui->video->length());
 			if (pause)
 				ui->video->pause();
 		}
@@ -91,46 +108,50 @@ void MainWindow::gotoTime(qint64 time, bool pause)
 {
 	if (ui->video->state() != QGst::StateNull)
 	{
-		uint length = ui->video->length().msecsTo(QTime(0,0));
-	    if (length != 0)
+//		if (length != 0)
 		{
-	        QTime pos(0,0);
-//			pos = pos.addMSecs(qint64(res));
 
-			ui->video->setPosition(pos);
+//			ui->video->setPosition(pos);
 			if (pause)
 				ui->video->pause();
 		}
 	}
 }
 
-void MainWindow::positionChanged()
+void MainWindow::updateStatus(const GstTime &position, const GstTime &length)
 {
-	QTime pos(0,0);
-	QTime len(0,0);
-	double fps = 0.0;
+	QString message;
 
-
-	if (ui->video->state() != QGst::StateReady &&
-        ui->video->state() != QGst::StateNull)
-	{
-		fps = ui->video->metadata().getFramerate();
-		pos = ui->video->position();
-		len = ui->video->length();
-	}
-
-	quint32 frame = double(-1 * pos.msecsTo(QTime(0,0))) * fps / 1000.0;
-	QString message = pos.toString("hh:mm:ss.zzz") + "/" + len.toString("hh:mm:ss.zzz");
-	message += " Frame: " + QString::number(frame);
-	message += " Name: " + ui->video->metadata().getFileName();
-	message += " Frames: " + QString::number(ui->video->metadata().getFrames());
+	message = position.Time.toString("hh:mm:ss.zzz") + "/" + length.Time.toString("hh:mm:ss.zzz");
+	message += "\tFrame: " + QString::number(position.Frame);
+	message += "\tName: " + ui->video->metadata().getFileName();
 
 	ui->statusBar->showMessage(message);
 }
 
-void MainWindow::setState()
+void MainWindow::positionUpdate()
 {
-	//
+	GstTime pos, len;
+
+	if (ui->video->state() != QGst::StateReady &&
+	    ui->video->state() != QGst::StateNull)
+	{
+		pos = ui->video->position();
+		len = ui->video->length();
+	}
+	updateStatus(pos, len);
+}
+
+void MainWindow::stateUpdate()
+{
+	QGst::State newState = ui->video->state();
+	// TODO: set controls state
+	ui->controls->setVolume(ui->video->volume());
+	if (newState == QGst::StateNull)
+	{
+		positionUpdate();
+		qDebug() << "STATE NULL";
+	}
 }
 
 void MainWindow::open()
@@ -172,16 +193,63 @@ void MainWindow::fullScreen()
 	}
 }
 
-//	gotoFrame(2870, true);
-
-void MainWindow::on_editor_cursorPositionChanged()
+void MainWindow::seekForward()
 {
-	QTextEdit::ExtraSelection highlight;
-	highlight.cursor = ui->editor->textCursor();
-	highlight.format.setProperty(QTextFormat::FullWidthSelection, true);
-	highlight.format.setBackground(Qt::green);
+	if (ui->video->state() != QGst::StateReady &&
+	    ui->video->state() != QGst::StateNull)
+	{
+		seek(settings->Video.SeekShort);
+	}
+}
 
-	QList<QTextEdit::ExtraSelection> extras;
-	extras << highlight;
-	ui->editor->setExtraSelections(extras);
+void MainWindow::seekBackward()
+{
+	if (ui->video->state() != QGst::StateReady &&
+	    ui->video->state() != QGst::StateNull)
+	{
+		seek(-1 * settings->Video.SeekShort);
+	}
+}
+
+void MainWindow::nextFrame()
+{
+	if (ui->video->state() != QGst::StateReady &&
+	    ui->video->state() != QGst::StateNull)
+	{
+		gotoFrame(ui->video->position().Frame + 1, true);
+	}
+}
+
+void MainWindow::prevFrame()
+{
+	if (ui->video->state() != QGst::StateReady &&
+	    ui->video->state() != QGst::StateNull)
+	{
+		gotoFrame(ui->video->position().Frame - 1, true);
+	}
+}
+
+void MainWindow::volumeUp()
+{
+	int vol = ui->video->volume();
+	if (vol < 10)
+	{
+		ui->video->setVolume(vol + 1);
+		ui->controls->setVolume(vol - 1);
+	}
+}
+
+void MainWindow::volumeDown()
+{
+	int vol = ui->video->volume();
+	if (vol > 0)
+	{
+		ui->video->setVolume(vol - 1);
+		ui->controls->setVolume(vol - 1);
+	}
+}
+
+void MainWindow::jump()
+{
+	gotoFrame(2870, true);
 }

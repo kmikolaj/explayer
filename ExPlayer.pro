@@ -20,13 +20,16 @@ SOURCES += main.cpp\
     player.cpp \
     controls.cpp \
     settings.cpp \
-    osd.cpp
+    osd.cpp \
+    subtitleeditor.cpp
 
 HEADERS  += mainwindow.h \
     player.h \
     controls.h \
     settings.h \
-    osd.h
+    osd.h \
+    subtitleeditor.h \
+    version.h
 
 FORMS    += mainwindow.ui \
     controls.ui

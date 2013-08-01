@@ -21,6 +21,18 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="Player" name="video" native="true">
       <property name="sizePolicy">
@@ -42,18 +54,12 @@
      </widget>
     </item>
     <item>
-     <widget class="QTextEdit" name="editor">
+     <widget class="SubtitleEditor" name="editor">
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOff</enum>
       </property>
       <property name="horizontalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="lineWrapMode">
-       <enum>QTextEdit::NoWrap</enum>
-      </property>
-      <property name="acceptRichText">
-       <bool>false</bool>
       </property>
      </widget>
     </item>
@@ -74,6 +80,11 @@
    <extends>QWidget</extends>
    <header>controls.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SubtitleEditor</class>
+   <extends>QPlainTextEdit</extends>
+   <header>subtitleeditor.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

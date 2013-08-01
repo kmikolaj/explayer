@@ -12,83 +12,115 @@
 
 enum SeekFlag
 {
-	None,
-	Accurate,
-	Skip
+    None,
+    Accurate,
+    Skip
+};
+
+class GstTime
+{
+public:
+	GstTime();
+	GstTime(const QTime &time);
+	GstTime(const qint32 frame);
+	GstTime(const qint64 msec);
+	static void setFps(double fps);
+	QTime Time;
+	qint32 Frame;
+	qint64 Msec;
+	qint64 Nsec;
+	bool Valid() { return (framerate > 0.0); }
+	void moveMsec(qint64 msec);
+	void moveFrame(qint32 frame);
+private:
+	static double framerate;
 };
 
 class MetaData
 {
 public:
-	MetaData() : valid(false) {}
-	MetaData(const QGst::DiscovererInfoPtr& _info);
-	double getFramerate() const {return framerate; }
-	QTime getDuration() const { return duration; }
-	quint32 getFrames() const { return frames; }
-	quint64 getSize() const { return size; }
-	QString getFileName() const { return filename; }
-	bool isValid() const { return valid; }
+	MetaData();
+	MetaData(const QGst::DiscovererInfoPtr &_info);
+	double getFramerate() const
+	{
+		return framerate;
+	}
+	GstTime getDuration() const
+	{
+		return duration;
+	}
+	quint64 getSize() const
+	{
+		return size;
+	}
+	QString getFileName() const
+	{
+		return filename;
+	}
+	bool isValid() const
+	{
+		return valid;
+	}
 private:
 	QGst::DiscovererInfoPtr info;
 	QGst::DiscovererVideoInfoPtr videoInfo;
 	bool valid;
 	double framerate;
-	QTime duration;
-	quint64 frames;
+	GstTime duration;
 	quint64 size;
 	QString filename;
+
+	void init();
 };
 
 class Player : public QGst::Ui::VideoWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    Player(QWidget *parent = 0);
-    ~Player();
+	Player(QWidget *parent = 0);
+	~Player();
 
-    void setUri(const QString & uri);
-    void setSubtitles(const QString & sub, const QString & font, const QString & enc);
+	void setUri(const QString &uri);
+	void setSubtitles(const QString &sub, const QString &font, const QString &enc);
 
-    QTime position() const;
-	quint64 currentframe() const;
-    void setPosition(const QTime & pos, SeekFlag flag=None);
-    int volume() const;
+	GstTime position() const;
+	void setPosition(const GstTime &pos, SeekFlag flag = None);
+	int volume() const;
 
-    QGst::State state() const;
-    QTime length() const;
+	QGst::State state() const;
+	GstTime length() const;
 	MetaData metadata() const;
-
-	Osd *osd; // DEBUG
+	QGst::PipelinePtr pipeline;
 
 public slots:
-    void play();
-    void pause();
+	void play();
+	void pause();
 	void toggle();
-    void stop();
+	void stop();
 	void gotoframe(quint64 frame);
-    void setVolume(int volume);
+	void setVolume(int volume);
 	void forceaspectratio();
 	void togglesubtitles();
 
 signals:
-    void positionChanged();
-    void stateChanged();
+	void positionChanged();
+	void stateChanged();
 
 private:
-    void onBusMessage(const QGst::MessagePtr & message);
-    void handlePipelineStateChange(const QGst::StateChangedMessagePtr & scm);
-	quint64 toFrame(const QTime& time) const;
+	void onBusMessage(const QGst::MessagePtr &message);
+	void handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm);
 	void extractMetaData();
 
-    QGst::PipelinePtr pipeline;
+	//QGst::PipelinePtr pipeline;
 	QString videouri;
 	QString suburi;
 	bool subtitles;
 	bool aspectratio;
 	MetaData meta;
-    QTimer positionTimer;
+	QTimer positionTimer;
 	Settings *settings;
+	Osd *osd;
 };
 
 #endif

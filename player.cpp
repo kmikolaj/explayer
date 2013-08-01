@@ -12,6 +12,8 @@
 #include <QGst/StreamVolume>
 #include <QGst/Caps>
 
+double GstTime::framerate = 0.0;
+
 Player::Player(QWidget *parent)
 	: QGst::Ui::VideoWidget(parent)
 {
@@ -70,6 +72,7 @@ void Player::setUri(const QString &uri)
 		videouri = realUri;
 		pipeline->setProperty("uri", videouri);
 		extractMetaData();
+		GstTime::setFps(meta.getFramerate());
 	}
 }
 
@@ -117,31 +120,21 @@ void Player::extractMetaData()
 	meta = MetaData();
 }
 
-QTime Player::position() const
+GstTime Player::position() const
 {
 	if (pipeline)
 	{
 		QGst::PositionQueryPtr query = QGst::PositionQuery::create(QGst::FormatTime);
 		pipeline->query(query);
-		return QGst::ClockTime(query->position()).toTime();
+		return GstTime(QGst::ClockTime(query->position()).toTime());
 	}
 	else
 	{
-		return QTime(0, 0);
+		return GstTime();
 	}
 }
 
-quint64 Player::currentframe() const
-{
-	quint64 frame = 0;
-	if (pipeline)
-	{
-		frame = toFrame(position());
-	}
-	return frame;
-}
-
-void Player::setPosition(const QTime &pos, SeekFlag flag)
+void Player::setPosition(const GstTime &pos, SeekFlag flag)
 {
 	if (pipeline)
 	{
@@ -153,7 +146,7 @@ void Player::setPosition(const QTime &pos, SeekFlag flag)
 
 		QGst::SeekEventPtr evt = QGst::SeekEvent::create(
 		                             1.0, QGst::FormatTime, flags,
-		                             QGst::SeekTypeSet, QGst::ClockTime::fromTime(pos),
+		                             QGst::SeekTypeSet, QGst::ClockTime::fromTime(pos.Time),
 		                             QGst::SeekTypeNone, QGst::ClockTime::None
 		                         );
 
@@ -186,51 +179,57 @@ void Player::setVolume(int volume)
 
 		if (svp)
 		{
-			svp->setVolume((double)volume / 10, QGst::StreamVolumeFormatCubic);
+			svp->setVolume((double)volume / 10.0, QGst::StreamVolumeFormatCubic);
 		}
 	}
 }
 
 void Player::forceaspectratio()
 {
-	aspectratio = !aspectratio;
-	QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
-	if (sink)
+	if (pipeline)
 	{
-		QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
-		proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
+		aspectratio = !aspectratio;
+		QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
+		if (sink)
+		{
+			QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
+			proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
+		}
+		if (aspectratio)
+		{
+			osd->setText("keep aspect ratio");
+		}
+		else
+		{
+			osd->setText("ignore aspect ratio");
+		}
+		this->repaint();
 	}
-	if (aspectratio)
-	{
-		osd->setText("force aspect ratio");
-	}
-	else
-	{
-		osd->setText("no force aspect ratio");
-	}
-	this->repaint();
 }
 
 void Player::togglesubtitles()
 {
 	// does not work
 	// https://bugzilla.gnome.org/show_bug.cgi?id=589515
-	if (subtitles)
+	if (pipeline)
 	{
-		osd->setText("no subtitles");
-		pipeline->setProperty("suburi", NULL);
+		if (subtitles)
+		{
+			osd->setText("no subtitles");
+			pipeline->setProperty("suburi", NULL);
+		}
+		else
+		{
+			osd->setText("subtitles");
+			pipeline->setProperty("suburi", suburi);
+		}
+		subtitles = !subtitles;
 	}
-	else
-	{
-		osd->setText("subtitles");
-		pipeline->setProperty("suburi", suburi);
-	}
-	subtitles = !subtitles;
 }
 
-QTime Player::length() const
+GstTime Player::length() const
 {
-	return (meta.isValid() ? meta.getDuration() : QTime(0, 0));
+	return (meta.isValid() ? meta.getDuration() : GstTime());
 }
 
 QGst::State Player::state() const
@@ -328,15 +327,19 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 		{
 			positionTimer.stop();
 		}
+		break;
 	case QGst::StateReady:
+	{
+		QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
+		if (sink)
 		{
-			QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
-			if (sink)
-			{
-				QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
-				proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
-			}
+			QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
+			proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
 		}
+		break;
+	}
+	case QGst::StateNull:
+		positionTimer.stop();
 		break;
 	default:
 		break;
@@ -346,7 +349,7 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 }
 
 
-MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info), valid(false)
+MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
 {
 	if (info->videoStreams().size() > 0)
 	{
@@ -355,21 +358,82 @@ MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info), valid(fa
 		framerate = double(videoInfo->framerate().numerator) /
 		            double(videoInfo->framerate().denominator);
 		duration = QGst::ClockTime(info->duration()).toTime();
-		frames = duration.hour() * 3600 + duration.minute() * 60 + duration.second();
-		frames = quint64(frames * framerate + 0.5);
+		// TODO:miliseconds
+//		frames = duration.hour() * 3600 + duration.minute() * 60 + duration.second();
+//		frames = quint64(frames * framerate + 0.5);
 
 		filename = info->uri().toLocalFile();
 		QFile file(filename);
-		if (file.open(QIODevice::ReadOnly))
-			size = file.size();
-
+		size = file.size();
 		valid = true;
+	}
+	else
+	{
+		init();
 	}
 }
 
-quint64 Player::toFrame(const QTime &time) const
+MetaData::MetaData()
 {
-	quint64 frame = time.hour() * 3600 + time.minute() * 60 + time.second();
-	double framerate = meta.getFramerate();
-	return quint64(frame * framerate + 0.5);
+	init();
+}
+
+void MetaData::init()
+{
+	valid = false;
+	framerate = 0.0;
+	duration = GstTime();
+	size = 0;
+	filename = "";
+}
+
+GstTime::GstTime()
+{
+	Time = QTime(0,0);
+	Nsec = Frame = Msec = 0;
+}
+
+GstTime::GstTime(const QTime &time)
+{
+	Time = time;
+	Msec = time.hour() * 3600000 + time.minute() * 60000 + time.second() * 1000 + time.msec();
+	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
+	Nsec = Msec * 1000;
+}
+
+GstTime::GstTime(const qint32 frame)
+{
+	Frame = frame;
+	Msec = qint64((frame / GstTime::framerate) * 1000.0);
+	Time = QTime(0,0).addMSecs(Msec);
+	Nsec = Msec * 1000;
+}
+
+GstTime::GstTime(const qint64 msec)
+{
+	Msec = msec;
+	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
+	Time = QTime(0,0).addMSecs(Msec);
+	Nsec = Msec * 1000;
+}
+
+void GstTime::setFps(double fps)
+{
+	GstTime::framerate = fps;
+}
+
+void GstTime::moveMsec(qint64 msec)
+{
+	Msec += msec;
+	Time = Time.addMSecs(msec);
+	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
+	Nsec += Msec * 1000;
+}
+
+void GstTime::moveFrame(qint32 frame)
+{
+	Frame += frame;
+	Msec = qint64((frame / GstTime::framerate) * 1000.0);
+	Time = QTime(0,0).addMSecs(Msec);
+	Nsec = Msec * 1000;
 }

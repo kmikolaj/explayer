@@ -2,8 +2,8 @@
 #include "ui_controls.h"
 
 Controls::Controls(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::Controls)
+	QWidget(parent),
+	ui(new Ui::Controls)
 {
 	ui->setupUi(this);
 }
@@ -11,6 +11,11 @@ Controls::Controls(QWidget *parent) :
 Controls::~Controls()
 {
 	delete ui;
+}
+
+void Controls::setVolume(int volume)
+{
+	ui->volumeSlider->setValue(volume);
 }
 
 void Controls::on_playButton_clicked()
@@ -30,15 +35,20 @@ void Controls::on_stopButton_clicked()
 
 void Controls::on_prevFrameButton_clicked()
 {
-	emit prevframe();
+	emit prevFrame();
 }
 
 void Controls::on_nextFrameButton_clicked()
 {
-	emit nextframe();
+	emit nextFrame();
 }
 
 void Controls::on_openButton_clicked()
 {
 	emit open();
+}
+
+void Controls::on_volumeSlider_sliderMoved(int position)
+{
+	emit volumeChanged(position);
 }

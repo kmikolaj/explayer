@@ -2,12 +2,12 @@
 #include <QGst/ElementFactory>
 
 Osd::Osd(QObject *parent) :
-    QObject(parent)
+	QObject(parent)
 {
 }
 
 Osd::Osd(QGst::PipelinePtr pipe, QObject *parent)
-    : QObject(parent), pipeline(pipe), lasttext(QString()), visible(false)
+	: QObject(parent), pipeline(pipe), lasttext(QString()), visible(false)
 {
 	init();
 }
@@ -37,7 +37,7 @@ void Osd::setText(const QString &text, const int time)
 		timer.setInterval(time);
 		timer.stop();
 		timer.start();
-		overlay->setProperty("text", lasttext=text);
+		overlay->setProperty("text", lasttext = text);
 	}
 }
 
@@ -53,19 +53,19 @@ void Osd::init()
 {
 	QGst::ElementPtr videosink = QGst::ElementFactory::make("xvimagesink");
 	overlay = QGst::ElementFactory::make("textoverlay");
-    osdbin = QGst::Bin::create("osd");
+	osdbin = QGst::Bin::create("osd");
 
-    osdbin->add(overlay);
+	osdbin->add(overlay);
 	QGst::PadPtr pad = overlay->getStaticPad("video_sink");
-    QGst::GhostPadPtr ghostpad = QGst::GhostPad::create(pad, "sink");
-    osdbin->addPad(ghostpad);
-    osdbin->add(videosink);
+	QGst::GhostPadPtr ghostpad = QGst::GhostPad::create(pad, "sink");
+	osdbin->addPad(ghostpad);
+	osdbin->add(videosink);
 
 	overlay->setProperty("text", lasttext);
-    overlay->setProperty("valign", "top");
-    overlay->setProperty("halign", "left");
-    overlay->setProperty("shaded-background", true);
-    overlay->setProperty("font-desc", "Sans Bold 16");
+	overlay->setProperty("valign", "top");
+	overlay->setProperty("halign", "left");
+	overlay->setProperty("shaded-background", true);
+	overlay->setProperty("font-desc", "Sans Bold 16");
 
 	overlay->link(videosink);
 

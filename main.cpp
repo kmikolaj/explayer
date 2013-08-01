@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 	QGst::init(&argc, &argv);
 	MainWindow w;
 	w.show();
-	
+
 	if (argc > 1)
 	{
 		w.playFile(argv[1]);

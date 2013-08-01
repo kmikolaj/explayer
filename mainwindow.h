@@ -9,14 +9,15 @@
 #include "controls.h"
 #include "settings.h"
 
-namespace Ui {
+namespace Ui
+{
 class MainWindow;
 }
 
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
-	
+
 public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
@@ -33,15 +34,24 @@ private:
 	QVector<QShortcut *> hotkeys;
 	bool editor;
 
+	void seek(int seconds);
+	void gotoFrame(qint32 frame, bool pause = false);
+	void gotoTime(qint64 time, bool pause = false);
+	void updateStatus(const GstTime &position, const GstTime &length);
+
 private slots:
-	void gotoFrame(qint64 frame, bool pause=false);
-	void gotoTime(qint64 time, bool pause=false);
-	void positionChanged();
-	void setState();
+	void positionUpdate();
+	void stateUpdate();
 	void open();
 	void toggleeditor();
 	void fullScreen();
-	void on_editor_cursorPositionChanged();
+	void seekForward();
+	void seekBackward();
+	void nextFrame();
+	void prevFrame();
+	void volumeUp();
+	void volumeDown();
+	void jump();
 };
 
 #endif // MAINWINDOW_H

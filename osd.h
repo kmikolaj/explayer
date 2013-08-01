@@ -19,15 +19,15 @@ public:
 	void disable();
 
 signals:
-	
+
 public slots:
-	void setText(const QString &text, const int time=1000);
+	void setText(const QString &text, const int time = 1000);
 	void clear();
 
 private:
 	void init();
 	QGst::PipelinePtr pipeline;
-    QGst::ElementPtr overlay;
+	QGst::ElementPtr overlay;
 	QGst::BinPtr osdbin;
 	QGst::BinPtr bin;
 	QString lasttext;
