@@ -10,6 +10,7 @@
 #include <QGst/ClockTime>
 #include <QGst/Event>
 #include <QGst/StreamVolume>
+#include <QGst/ColorBalance>
 #include <QGst/Caps>
 
 double GstTime::framerate = 0.0;
@@ -23,6 +24,7 @@ Player::Player(QWidget *parent)
 	settings = Settings::GetSettings(this);
 	subtitles = settings->Video.Subtitles;
 	aspectratio = settings->Video.ForceAspectRatio;
+	setHardwareAcceleration(settings->Video.VAAPI);
 }
 
 Player::~Player()
@@ -47,9 +49,12 @@ void Player::setUri(const QString &uri)
 	if (!pipeline)
 	{
 		pipeline = QGst::ElementFactory::make("playbin2").dynamicCast<QGst::Pipeline>();
-		osd = new Osd(pipeline, this);
-		if (settings->Gui.Osd)
-			osd->enable();
+		if (settings->Gui.Color)
+			balance = new VideoBalance(pipeline, this);
+//		osd = new Osd(pipeline, this);
+//		balance->element()->link(osd->element());
+//		if (settings->Gui.Osd)
+//			osd->enable();
 
 		if (pipeline)
 		{
@@ -72,7 +77,6 @@ void Player::setUri(const QString &uri)
 		videouri = realUri;
 		pipeline->setProperty("uri", videouri);
 		extractMetaData();
-		GstTime::setFps(meta.getFramerate());
 	}
 }
 
@@ -120,6 +124,15 @@ void Player::extractMetaData()
 	meta = MetaData();
 }
 
+void Player::setHardwareAcceleration(bool enable)
+{
+	QGst::PluginFeaturePtr decoder = QGst::ElementFactory::find("vaapidecode");
+	if (decoder)
+	{
+		decoder->setRank(enable ? QGst::RankPrimary : QGst::RankNone);
+	}
+}
+
 GstTime Player::position() const
 {
 	if (pipeline)
@@ -154,23 +167,22 @@ void Player::setPosition(const GstTime &pos, SeekFlag flag)
 	}
 }
 
-int Player::volume() const
+double Player::volume() const
 {
 	if (pipeline)
-	{
+	{		
 		QGst::StreamVolumePtr svp =
 		    pipeline.dynamicCast<QGst::StreamVolume>();
 
 		if (svp)
 		{
-			return svp->volume(QGst::StreamVolumeFormatCubic) * 10;
+			return svp->volume(QGst::StreamVolumeFormatCubic);
 		}
 	}
-
-	return 0;
+	return 0.0;
 }
 
-void Player::setVolume(int volume)
+void Player::setVolume(double volume)
 {
 	if (pipeline)
 	{
@@ -179,8 +191,17 @@ void Player::setVolume(int volume)
 
 		if (svp)
 		{
-			svp->setVolume((double)volume / 10.0, QGst::StreamVolumeFormatCubic);
+			svp->setVolume(volume, QGst::StreamVolumeFormatCubic);
 		}
+	}
+}
+
+void Player::setBalance(ColorBalance type, int value)
+{
+	if (pipeline)
+	{
+//		QGst::ElementPtr sink = videoSink();
+//		QGst::ColorBalancePtr
 	}
 }
 
@@ -188,22 +209,21 @@ void Player::forceaspectratio()
 {
 	if (pipeline)
 	{
-		aspectratio = !aspectratio;
-		QGst::ElementPtr sink = pipeline->property("video-sink").get<QGst::ElementPtr>();
+		QGst::ElementPtr sink = videoSink();
 		if (sink)
 		{
-			QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
-			proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
+			aspectratio = !aspectratio;
+			sink->setProperty("force-aspect-ratio", aspectratio);
+			if (aspectratio)
+			{
+				osd->setText("keep aspect ratio");
+			}
+			else
+			{
+				osd->setText("ignore aspect ratio");
+			}
+			update();
 		}
-		if (aspectratio)
-		{
-			osd->setText("keep aspect ratio");
-		}
-		else
-		{
-			osd->setText("ignore aspect ratio");
-		}
-		this->repaint();
 	}
 }
 
@@ -247,6 +267,7 @@ void Player::play()
 	if (pipeline)
 	{
 		pipeline->setState(QGst::StatePlaying);
+		osd->setText("▶");
 	}
 }
 
@@ -254,6 +275,7 @@ void Player::pause()
 {
 	if (pipeline)
 	{
+		//osd->setText("■"); nie działa
 		pipeline->setState(QGst::StatePaused);
 	}
 }
@@ -279,15 +301,6 @@ void Player::stop()
 	{
 		pipeline->setState(QGst::StateNull);
 		emit stateChanged();
-	}
-}
-
-void Player::gotoframe(quint64 frame)
-{
-	if (pipeline)
-	{
-		if (state() == QGst::StatePlaying)
-			pause();
 	}
 }
 
@@ -336,7 +349,6 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 			QGst::ChildProxyPtr proxy = sink.dynamicCast<QGst::ChildProxy>();
 			proxy->childByIndex(0)->setProperty("force-aspect-ratio", aspectratio);
 		}
-		break;
 	}
 	case QGst::StateNull:
 		positionTimer.stop();
@@ -357,11 +369,9 @@ MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
 
 		framerate = double(videoInfo->framerate().numerator) /
 		            double(videoInfo->framerate().denominator);
+		GstTime::setFps(framerate);
 		duration = QGst::ClockTime(info->duration()).toTime();
-		// TODO:miliseconds
-//		frames = duration.hour() * 3600 + duration.minute() * 60 + duration.second();
-//		frames = quint64(frames * framerate + 0.5);
-
+		frames = duration.Frame;
 		filename = info->uri().toLocalFile();
 		QFile file(filename);
 		size = file.size();

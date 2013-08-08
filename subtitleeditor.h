@@ -9,10 +9,14 @@ class SubtitleEditor : public QPlainTextEdit
 public:
 	explicit SubtitleEditor(QWidget *parent = 0);
 
+protected:
+    virtual void keyPressEvent(QKeyEvent *e);
+
 private:
 	void highlightLine();
 
 signals:
+	void hideWindow();
 
 public slots:
 	void on_cursorPositionChanged();

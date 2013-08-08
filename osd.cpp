@@ -41,6 +41,11 @@ void Osd::setText(const QString &text, const int time)
 	}
 }
 
+void Osd::showTime()
+{
+	// TODO
+}
+
 void Osd::clear()
 {
 	if (visible)
@@ -53,13 +58,13 @@ void Osd::init()
 {
 	QGst::ElementPtr videosink = QGst::ElementFactory::make("xvimagesink");
 	overlay = QGst::ElementFactory::make("textoverlay");
-	osdbin = QGst::Bin::create("osd");
+	bin = QGst::Bin::create("osd");
 
-	osdbin->add(overlay);
+	bin->add(overlay);
 	QGst::PadPtr pad = overlay->getStaticPad("video_sink");
 	QGst::GhostPadPtr ghostpad = QGst::GhostPad::create(pad, "sink");
-	osdbin->addPad(ghostpad);
-	osdbin->add(videosink);
+	bin->addPad(ghostpad);
+	bin->add(videosink);
 
 	overlay->setProperty("text", lasttext);
 	overlay->setProperty("valign", "top");
@@ -67,9 +72,10 @@ void Osd::init()
 	overlay->setProperty("shaded-background", true);
 	overlay->setProperty("font-desc", "Sans Bold 16");
 
-	overlay->link(videosink);
 
-	pipeline->setProperty("video-sink", osdbin);
+	//overlay->link(videosink);
+
+	//pipeline->setProperty("video-sink", bin);
 	visible = false;
 
 	timer.setSingleShot(true);

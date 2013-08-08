@@ -26,6 +26,7 @@ public:
 	void playFile(const QString &filename);
 	void playUrl(const QUrl &url);
 	void addHotkey(const QString &key, const QObject *obj, const char *slot);
+	void addHotkey(const QKeySequence &key, const QObject *obj, const char *slot);
 
 private:
 	Ui::MainWindow *ui;
@@ -36,7 +37,7 @@ private:
 
 	void seek(int seconds);
 	void gotoFrame(qint32 frame, bool pause = false);
-	void gotoTime(qint64 time, bool pause = false);
+	void gotoTime(const QTime& time, bool pause = false);
 	void updateStatus(const GstTime &position, const GstTime &length);
 
 private slots:

@@ -24,7 +24,7 @@ signals:
 	void nextFrame();
 	void prevFrame();
 	void open();
-	void volumeChanged(int);
+	void volumeChanged(double);
 
 private slots:
 	void on_playButton_clicked();

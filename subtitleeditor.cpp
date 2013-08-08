@@ -9,6 +9,18 @@ SubtitleEditor::SubtitleEditor(QWidget *parent) :
 	highlightLine();
 }
 
+void SubtitleEditor::keyPressEvent(QKeyEvent *e)
+{
+	// przechwyć taba
+	// emit
+	if (e->key() == Qt::Key_Tab)
+	{
+		emit hideWindow();
+	}
+	else
+		QPlainTextEdit::keyPressEvent(e);
+}
+
 void SubtitleEditor::highlightLine()
 {
 	QTextEdit::ExtraSelection highlight;

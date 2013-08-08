@@ -21,7 +21,9 @@ SOURCES += main.cpp\
     controls.cpp \
     settings.cpp \
     osd.cpp \
-    subtitleeditor.cpp
+    subtitleeditor.cpp \
+    utils.cpp \
+    videobalance.cpp
 
 HEADERS  += mainwindow.h \
     player.h \
@@ -29,7 +31,9 @@ HEADERS  += mainwindow.h \
     settings.h \
     osd.h \
     subtitleeditor.h \
-    version.h
+    version.h \
+    utils.h \
+    videobalance.h
 
 FORMS    += mainwindow.ui \
     controls.ui

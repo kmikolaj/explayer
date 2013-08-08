@@ -10,6 +10,12 @@ Settings *Settings::GetSettings(QObject *parent)
 	return settings;
 }
 
+QString Settings::GetVersionInfo()
+{
+	QString info;
+	return info.sprintf("Version: %d.%d.%d (Codename: %s)", _MAJOR_, _MINOR_, _REVISION_, _CODENAME_);
+}
+
 Settings::Settings(QObject *parent) : QObject(parent)
 {
 	setDefault();
@@ -30,6 +36,7 @@ void Settings::setDefault()
 	Video.SeekShort = 5;
 	Video.SeekMid = 60;
 	Video.SeekLong = 600;
+	Video.RememberPosition = true;
 
 	// audio
 	Audio.Output = "alsa";
@@ -40,9 +47,36 @@ void Settings::setDefault()
 
 	// gui
 	Gui.VideoDir = ".";
+	Gui.LastDir = ".";
+	Gui.RememberDir = true;
 	Gui.Osd = true;
+	Gui.Color = true;
 	Gui.ControlBar = true;
 	Gui.StatusBar = true;
 	Gui.MenuBar = false;
 	Gui.Editor = false;
+
+	// hotkeys
+	Keys.VolumeUp = QKeySequence(Qt::KeypadModifier | Qt::Key_Asterisk);
+	Keys.VolumeDown = QKeySequence(Qt::KeypadModifier | Qt::Key_Slash);
+	Keys.Mute = QKeySequence(Qt::Key_M);
+	Keys.FullScreen = QKeySequence(Qt::Key_F);
+	Keys.Subtitles = QKeySequence(Qt::Key_S);
+	Keys.AspectRatio = QKeySequence(Qt::Key_R);
+	Keys.PlayPause = QKeySequence(Qt::Key_Space);
+	Keys.Editor = QKeySequence(Qt::Key_Tab);
+	Keys.Stop = QKeySequence(Qt::ShiftModifier | Qt::Key_S);
+	Keys.SeekForward = QKeySequence(Qt::Key_Right);
+	Keys.SeekBackward = QKeySequence(Qt::Key_Left);
+	Keys.NextFrame = QKeySequence(Qt::Key_Period);
+	Keys.PrevFrame = QKeySequence(Qt::Key_Comma);
+	Keys.ContrastUp = QKeySequence(Qt::Key_1);
+	Keys.ContrastDown = QKeySequence(Qt::Key_2);
+	Keys.BrightnessDown = QKeySequence(Qt::Key_3);
+	Keys.BrightnessUp = QKeySequence(Qt::Key_4);
+	Keys.SaturationUp = QKeySequence(Qt::Key_5);
+	Keys.SaturationDown = QKeySequence(Qt::Key_6);
+	Keys.HueUp = QKeySequence(Qt::Key_7);
+	Keys.HueDown = QKeySequence(Qt::Key_8);
+	Keys.Jump = QKeySequence(Qt::Key_G);
 }

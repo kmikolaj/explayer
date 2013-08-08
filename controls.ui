@@ -165,16 +165,19 @@
       <enum>Qt::NoFocus</enum>
      </property>
      <property name="maximum">
-      <number>10</number>
+      <number>100</number>
+     </property>
+     <property name="tracking">
+      <bool>true</bool>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="tickPosition">
-      <enum>QSlider::TicksAbove</enum>
+      <enum>QSlider::TicksBothSides</enum>
      </property>
      <property name="tickInterval">
-      <number>5</number>
+      <number>25</number>
      </property>
     </widget>
    </item>

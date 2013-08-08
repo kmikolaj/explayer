@@ -9,12 +9,21 @@
 #include <QUrl>
 #include "settings.h"
 #include "osd.h"
+#include "videobalance.h"
 
 enum SeekFlag
 {
     None,
     Accurate,
     Skip
+};
+
+enum ColorBalance
+{
+	Contrast,
+	Brightness,
+	Hue,
+	Saturation
 };
 
 class GstTime
@@ -67,6 +76,7 @@ private:
 	bool valid;
 	double framerate;
 	GstTime duration;
+	quint32 frames;
 	quint64 size;
 	QString filename;
 
@@ -86,7 +96,7 @@ public:
 
 	GstTime position() const;
 	void setPosition(const GstTime &pos, SeekFlag flag = None);
-	int volume() const;
+	double volume() const;
 
 	QGst::State state() const;
 	GstTime length() const;
@@ -98,8 +108,8 @@ public slots:
 	void pause();
 	void toggle();
 	void stop();
-	void gotoframe(quint64 frame);
-	void setVolume(int volume);
+	void setVolume(double volume);
+	void setBalance(ColorBalance type, int value);
 	void forceaspectratio();
 	void togglesubtitles();
 
@@ -111,6 +121,7 @@ private:
 	void onBusMessage(const QGst::MessagePtr &message);
 	void handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm);
 	void extractMetaData();
+	void setHardwareAcceleration(bool enable);
 
 	//QGst::PipelinePtr pipeline;
 	QString videouri;
@@ -121,6 +132,7 @@ private:
 	QTimer positionTimer;
 	Settings *settings;
 	Osd *osd;
+	VideoBalance *balance;
 };
 
 #endif

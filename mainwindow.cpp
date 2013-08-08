@@ -1,8 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "utils.h"
 #include <QFileDialog>
-
-#include <QPainter>
+#include <QGst/StreamVolume>
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
@@ -12,29 +12,34 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	settings = Settings::GetSettings(this);
 
+	// Video Widget
 	connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
 	connect(ui->video, SIGNAL(stateChanged()), this, SLOT(stateUpdate()));
 
+	// Controls Widget
 	connect(ui->controls, SIGNAL(play()), ui->video, SLOT(play()));
 	connect(ui->controls, SIGNAL(pause()), ui->video, SLOT(pause()));
 	connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
 	connect(ui->controls, SIGNAL(open()), this, SLOT(open()));
-	connect(ui->controls, SIGNAL(volumeChanged(int)), ui->video, SLOT(setVolume(int)));
+	connect(ui->controls, SIGNAL(volumeChanged(double)), ui->video, SLOT(setVolume(double)));
 
-	movieDir = settings->Gui.VideoDir;
+	// Editor Widget
+	connect(ui->editor, SIGNAL(hideWindow()), this, SLOT(toggleeditor()));
 
 	// hotkeys
-	addHotkey("Space", ui->video, SLOT(toggle()));
-	addHotkey("f", this, SLOT(fullScreen()));
-	addHotkey("Tab", this, SLOT(toggleeditor()));
-	addHotkey("s", ui->video, SLOT(togglesubtitles()));
-	addHotkey("r", ui->video, SLOT(forceaspectratio()));
-	addHotkey("Right", this, SLOT(seekForward()));
-	addHotkey("Left", this, SLOT(seekBackward()));
-	addHotkey("h", this, SLOT(volumeUp()));
-	addHotkey("g", this, SLOT(jump()));
-	addHotkey(".", this, SLOT(nextFrame()));
-	addHotkey(",", this, SLOT(prevFrame()));
+	addHotkey(settings->Keys.PlayPause, ui->video, SLOT(toggle()));
+	addHotkey(settings->Keys.Stop, ui->video, SLOT(stop()));
+	addHotkey(settings->Keys.FullScreen, this, SLOT(fullScreen()));
+	addHotkey(settings->Keys.Editor, this, SLOT(toggleeditor()));
+	addHotkey(settings->Keys.Subtitles, ui->video, SLOT(togglesubtitles()));
+	addHotkey(settings->Keys.AspectRatio, ui->video, SLOT(forceaspectratio()));
+	addHotkey(settings->Keys.SeekForward, this, SLOT(seekForward()));
+	addHotkey(settings->Keys.SeekBackward, this, SLOT(seekBackward()));
+	addHotkey(settings->Keys.VolumeUp, this, SLOT(volumeUp()));
+	addHotkey(settings->Keys.VolumeDown, this, SLOT(volumeDown()));
+	addHotkey(settings->Keys.Jump, this, SLOT(jump()));
+	addHotkey(settings->Keys.NextFrame, this, SLOT(nextFrame()));
+	addHotkey(settings->Keys.PrevFrame, this, SLOT(prevFrame()));
 
 	// on start
 	positionUpdate();
@@ -49,9 +54,16 @@ MainWindow::~MainWindow()
 
 void MainWindow::openFile()
 {
+	if (settings->Gui.RememberDir)
+		movieDir = settings->Gui.LastDir;
+	else
+		movieDir = settings->Gui.VideoDir;
 	QString file = QFileDialog::getOpenFileName(this, tr("Open Video File"), movieDir);
 	if (!file.isEmpty())
+	{
+		settings->Gui.LastDir =  QFileInfo(file).path();
 		playFile(file);
+	}
 }
 
 void MainWindow::playFile(const QString &filename)
@@ -73,6 +85,13 @@ void MainWindow::playUrl(const QUrl &url)
 void MainWindow::addHotkey(const QString &key, const QObject *obj, const char *slot)
 {
 	QShortcut *shortcut = new QShortcut(QKeySequence(key), this);
+	hotkeys.append(shortcut);
+	connect(shortcut, SIGNAL(activated()), obj, slot);
+}
+
+void MainWindow::addHotkey(const QKeySequence &key, const QObject *obj, const char *slot)
+{
+	QShortcut *shortcut = new QShortcut(key, this);
 	hotkeys.append(shortcut);
 	connect(shortcut, SIGNAL(activated()), obj, slot);
 }
@@ -104,14 +123,13 @@ void MainWindow::gotoFrame(qint32 frame, bool pause)
 	}
 }
 
-void MainWindow::gotoTime(qint64 time, bool pause)
+void MainWindow::gotoTime(const QTime& time, bool pause)
 {
 	if (ui->video->state() != QGst::StateNull)
 	{
-//		if (length != 0)
+		if (ui->video->length().Time > QTime(0,0))
 		{
-
-//			ui->video->setPosition(pos);
+			ui->video->setPosition(GstTime(time));
 			if (pause)
 				ui->video->pause();
 		}
@@ -146,11 +164,14 @@ void MainWindow::stateUpdate()
 {
 	QGst::State newState = ui->video->state();
 	// TODO: set controls state
-	ui->controls->setVolume(ui->video->volume());
+	ui->controls->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic,
+	                                                    QGst::StreamVolumeFormatLinear,
+	                                                    ui->video->volume()) * 100);
+
 	if (newState == QGst::StateNull)
 	{
 		positionUpdate();
-		qDebug() << "STATE NULL";
+		ui->video->update();
 	}
 }
 
@@ -164,7 +185,10 @@ void MainWindow::toggleeditor()
 	if (editor)
 		ui->editor->hide();
 	else
+	{
 		ui->editor->show();
+		ui->editor->setFocus();
+	}
 	editor = !editor;
 }
 
@@ -231,21 +255,25 @@ void MainWindow::prevFrame()
 
 void MainWindow::volumeUp()
 {
-	int vol = ui->video->volume();
-	if (vol < 10)
+	double vol = ui->video->volume();
+	if (vol < 1.0)
 	{
-		ui->video->setVolume(vol + 1);
-		ui->controls->setVolume(vol - 1);
+		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
+		double newVol = linear + MIN(1.0 - linear, 0.05);
+		ui->video->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, newVol));
+		ui->controls->setVolume(newVol * 100);
 	}
 }
 
 void MainWindow::volumeDown()
 {
-	int vol = ui->video->volume();
-	if (vol > 0)
+	double vol = ui->video->volume();
+	if (vol > 0.0)
 	{
-		ui->video->setVolume(vol - 1);
-		ui->controls->setVolume(vol - 1);
+		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
+		double newVol = linear - MIN(linear, 0.05);
+		ui->video->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, newVol));
+		ui->controls->setVolume(newVol * 100);
 	}
 }
 
