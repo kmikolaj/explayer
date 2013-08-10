@@ -1,5 +1,5 @@
 #include "subtitleeditor.h"
-#include <QDebug>
+#include "settings.h"
 
 SubtitleEditor::SubtitleEditor(QWidget *parent) :
 	QPlainTextEdit(parent)
@@ -11,9 +11,8 @@ SubtitleEditor::SubtitleEditor(QWidget *parent) :
 
 void SubtitleEditor::keyPressEvent(QKeyEvent *e)
 {
-	// przechwyć taba
-	// emit
-	if (e->key() == Qt::Key_Tab)
+	Settings *settings = Settings::GetSettings(this);
+	if (QKeySequence(e->key()) == settings->Keys.Editor)
 	{
 		emit hideWindow();
 	}

@@ -10,7 +10,7 @@ public:
 	explicit SubtitleEditor(QWidget *parent = 0);
 
 protected:
-    virtual void keyPressEvent(QKeyEvent *e);
+	virtual void keyPressEvent(QKeyEvent *e);
 
 private:
 	void highlightLine();

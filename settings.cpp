@@ -1,4 +1,6 @@
 #include "settings.h"
+#include <QDir>
+#include <QTextStream>
 
 Settings *Settings::GetSettings(QObject *parent)
 {
@@ -19,6 +21,7 @@ QString Settings::GetVersionInfo()
 Settings::Settings(QObject *parent) : QObject(parent)
 {
 	setDefault();
+	readLastPositions();
 }
 
 Settings::~Settings()
@@ -36,7 +39,6 @@ void Settings::setDefault()
 	Video.SeekShort = 5;
 	Video.SeekMid = 60;
 	Video.SeekLong = 600;
-	Video.RememberPosition = true;
 
 	// audio
 	Audio.Output = "alsa";
@@ -55,6 +57,15 @@ void Settings::setDefault()
 	Gui.StatusBar = true;
 	Gui.MenuBar = false;
 	Gui.Editor = false;
+	Gui.RememberPosition = true;
+
+	QString dir;
+	if (getenv("XDG_CACHE_HOME"))
+		dir = QString(getenv("XDG_CACHE_HOME")) + QString("/ExPlayer");
+	else
+		dir = QString(getenv("HOME")) + QString("/.cache/Explayer");
+	QDir("/").mkpath(dir);
+	Gui.LastPositionFile = dir + "/positions";
 
 	// hotkeys
 	Keys.VolumeUp = QKeySequence(Qt::KeypadModifier | Qt::Key_Asterisk);
@@ -78,5 +89,35 @@ void Settings::setDefault()
 	Keys.SaturationDown = QKeySequence(Qt::Key_6);
 	Keys.HueUp = QKeySequence(Qt::Key_7);
 	Keys.HueDown = QKeySequence(Qt::Key_8);
-	Keys.Jump = QKeySequence(Qt::Key_G);
+	Keys.FrameJump = QKeySequence(Qt::ControlModifier | Qt::Key_G);
+	Keys.TimeJump = QKeySequence(Qt::ControlModifier | Qt::Key_T);
+}
+
+void Settings::readLastPositions()
+{
+	QFile file(Gui.LastPositionFile);
+	QList<QByteArray> line;
+	if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		line = file.readLine().split('=');
+		if (line.size() > 1)
+		{
+			QString filename = QString::fromLocal8Bit(line[0]);
+			QString time = QString::fromLocal8Bit(line[1]);
+			Gui.LastPosition[filename] = QTime::fromString(time);
+		}
+	}
+}
+
+void Settings::saveLastPositions()
+{
+	QFile file(Gui.LastPositionFile);
+	if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QTextStream stream(&file);
+		foreach(const QString & name, Gui.LastPosition.keys())
+		{
+			stream << name << "=" << Gui.LastPosition[name].toString();
+		}
+	}
 }

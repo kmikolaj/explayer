@@ -37,9 +37,13 @@ MainWindow::MainWindow(QWidget *parent) :
 	addHotkey(settings->Keys.SeekBackward, this, SLOT(seekBackward()));
 	addHotkey(settings->Keys.VolumeUp, this, SLOT(volumeUp()));
 	addHotkey(settings->Keys.VolumeDown, this, SLOT(volumeDown()));
-	addHotkey(settings->Keys.Jump, this, SLOT(jump()));
+	addHotkey(settings->Keys.FrameJump, this, SLOT(frameJump()));
+	addHotkey(settings->Keys.TimeJump, this, SLOT(timeJump()));
 	addHotkey(settings->Keys.NextFrame, this, SLOT(nextFrame()));
 	addHotkey(settings->Keys.PrevFrame, this, SLOT(prevFrame()));
+
+	// jumper dialog
+	jumper = new JumpDialog(this);
 
 	// on start
 	positionUpdate();
@@ -100,7 +104,7 @@ void MainWindow::seek(int seconds)
 {
 	GstTime newPos = ui->video->position();
 	newPos.moveMsec(1000 * seconds);
-	if (newPos.Time >= QTime(0,0) && newPos.Time <= ui->video->length().Time)
+	if (newPos.Time >= QTime(0, 0) && newPos.Time <= ui->video->length().Time)
 	{
 //		ui->video->setPosition(newPos, SeekFlag(Accurate));
 		ui->video->setPosition(newPos);
@@ -113,7 +117,7 @@ void MainWindow::gotoFrame(qint32 frame, bool pause)
 	if (ui->video->state() != QGst::StateNull)
 	{
 		GstTime newPos = GstTime(frame);
-		if (ui->video->length().Time > QTime(0,0))
+		if (ui->video->length().Time > QTime(0, 0))
 		{
 			ui->video->setPosition(newPos, SeekFlag(Accurate | Skip));
 			updateStatus(newPos, ui->video->length());
@@ -123,11 +127,11 @@ void MainWindow::gotoFrame(qint32 frame, bool pause)
 	}
 }
 
-void MainWindow::gotoTime(const QTime& time, bool pause)
+void MainWindow::gotoTime(const QTime &time, bool pause)
 {
 	if (ui->video->state() != QGst::StateNull)
 	{
-		if (ui->video->length().Time > QTime(0,0))
+		if (ui->video->length().Time > QTime(0, 0))
 		{
 			ui->video->setPosition(GstTime(time));
 			if (pause)
@@ -165,9 +169,8 @@ void MainWindow::stateUpdate()
 	QGst::State newState = ui->video->state();
 	// TODO: set controls state
 	ui->controls->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic,
-	                                                    QGst::StreamVolumeFormatLinear,
-	                                                    ui->video->volume()) * 100);
-
+	                        QGst::StreamVolumeFormatLinear,
+	                        ui->video->volume()) * 100);
 	if (newState == QGst::StateNull)
 	{
 		positionUpdate();
@@ -183,7 +186,10 @@ void MainWindow::open()
 void MainWindow::toggleeditor()
 {
 	if (editor)
+	{
 		ui->editor->hide();
+		ui->centralWidget->setFocus();
+	}
 	else
 	{
 		ui->editor->show();
@@ -277,7 +283,24 @@ void MainWindow::volumeDown()
 	}
 }
 
-void MainWindow::jump()
+void MainWindow::frameJump()
 {
-	gotoFrame(2870, true);
+	qint32 position;
+	jumper->setType(FrameJump);
+	if (jumper->exec())
+	{
+		position = jumper->getInput().toInt();
+		gotoFrame(position, true);
+	}
+}
+
+void MainWindow::timeJump()
+{
+	QTime position;
+	jumper->setType(TimeJump);
+	if (jumper->exec())
+	{
+		position = QTime::fromString(jumper->getInput(), "h:m:s");
+		gotoTime(position, true);
+	}
 }

@@ -8,6 +8,7 @@
 #include "player.h"
 #include "controls.h"
 #include "settings.h"
+#include "jumpdialog.h"
 
 namespace Ui
 {
@@ -34,10 +35,11 @@ private:
 	QString movieDir;
 	QVector<QShortcut *> hotkeys;
 	bool editor;
+	JumpDialog *jumper;
 
 	void seek(int seconds);
 	void gotoFrame(qint32 frame, bool pause = false);
-	void gotoTime(const QTime& time, bool pause = false);
+	void gotoTime(const QTime &time, bool pause = false);
 	void updateStatus(const GstTime &position, const GstTime &length);
 
 private slots:
@@ -52,7 +54,8 @@ private slots:
 	void prevFrame();
 	void volumeUp();
 	void volumeDown();
-	void jump();
+	void frameJump();
+	void timeJump();
 };
 
 #endif // MAINWINDOW_H

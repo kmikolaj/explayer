@@ -49,12 +49,12 @@ void Player::setUri(const QString &uri)
 	if (!pipeline)
 	{
 		pipeline = QGst::ElementFactory::make("playbin2").dynamicCast<QGst::Pipeline>();
+		osd = new Osd(pipeline, this);
 		if (settings->Gui.Color)
 			balance = new VideoBalance(pipeline, this);
-//		osd = new Osd(pipeline, this);
-//		balance->element()->link(osd->element());
-//		if (settings->Gui.Osd)
-//			osd->enable();
+		balance->link(osd);
+		if (settings->Gui.Osd)
+			osd->enable();
 
 		if (pipeline)
 		{
@@ -170,7 +170,7 @@ void Player::setPosition(const GstTime &pos, SeekFlag flag)
 double Player::volume() const
 {
 	if (pipeline)
-	{		
+	{
 		QGst::StreamVolumePtr svp =
 		    pipeline.dynamicCast<QGst::StreamVolume>();
 
@@ -198,7 +198,7 @@ void Player::setVolume(double volume)
 
 void Player::setBalance(ColorBalance type, int value)
 {
-	if (pipeline)
+	if (pipeline && settings->Gui.Color)
 	{
 //		QGst::ElementPtr sink = videoSink();
 //		QGst::ColorBalancePtr
@@ -399,7 +399,7 @@ void MetaData::init()
 
 GstTime::GstTime()
 {
-	Time = QTime(0,0);
+	Time = QTime(0, 0);
 	Nsec = Frame = Msec = 0;
 }
 
@@ -415,7 +415,7 @@ GstTime::GstTime(const qint32 frame)
 {
 	Frame = frame;
 	Msec = qint64((frame / GstTime::framerate) * 1000.0);
-	Time = QTime(0,0).addMSecs(Msec);
+	Time = QTime(0, 0).addMSecs(Msec);
 	Nsec = Msec * 1000;
 }
 
@@ -423,7 +423,7 @@ GstTime::GstTime(const qint64 msec)
 {
 	Msec = msec;
 	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
-	Time = QTime(0,0).addMSecs(Msec);
+	Time = QTime(0, 0).addMSecs(Msec);
 	Nsec = Msec * 1000;
 }
 
@@ -444,6 +444,6 @@ void GstTime::moveFrame(qint32 frame)
 {
 	Frame += frame;
 	Msec = qint64((frame / GstTime::framerate) * 1000.0);
-	Time = QTime(0,0).addMSecs(Msec);
+	Time = QTime(0, 0).addMSecs(Msec);
 	Nsec = Msec * 1000;
 }

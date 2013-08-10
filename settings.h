@@ -2,6 +2,8 @@
 #define SETTINGS_H
 
 #include <QObject>
+#include <QMap>
+#include <QTime>
 #include <QKeySequence>
 #include "version.h"
 
@@ -21,7 +23,6 @@ public:
 		int SeekShort;
 		int SeekMid;
 		int SeekLong;
-		bool RememberPosition;
 	} Video;
 
 	struct
@@ -46,6 +47,9 @@ public:
 		bool StatusBar;
 		bool MenuBar;
 		bool Editor;
+		bool RememberPosition;
+		QString LastPositionFile;
+		QMap<QString, QTime> LastPosition;
 	} Gui;
 
 	struct
@@ -71,7 +75,8 @@ public:
 		QKeySequence SaturationDown;
 		QKeySequence HueUp;
 		QKeySequence HueDown;
-		QKeySequence Jump;
+		QKeySequence FrameJump;
+		QKeySequence TimeJump;
 	} Keys;
 
 private:
@@ -79,6 +84,8 @@ private:
 	~Settings();
 
 	void setDefault();
+	void readLastPositions();
+	void saveLastPositions();
 };
 
 #endif // SETTINGS_H

@@ -1,48 +1,73 @@
 #include "videobalance.h"
 #include <QGst/ElementFactory>
 
-VideoBalance::VideoBalance(QObject *parent) :
-    QObject(parent)
+VideoBalance::VideoBalance(QObject *parent)
+	: VideoFilter(parent)
 {
 }
 
 VideoBalance::VideoBalance(QGst::PipelinePtr pipe, QObject *parent) :
-	QObject(parent), pipeline(pipe)
+	VideoFilter(pipe, parent)
 {
 	init();
 }
 
-void VideoBalance::setHue(double)
+double VideoBalance::hue() const
 {
-
+	return filter->property("hue").toByteArray().toDouble();
 }
 
-void VideoBalance::setSaturation(double)
+double VideoBalance::saturation() const
 {
-
+	return filter->property("saturation").toByteArray().toDouble();
 }
 
-void VideoBalance::setBrightness(double)
+double VideoBalance::brightness() const
 {
-
+	return filter->property("brightness").toByteArray().toDouble();
 }
 
-void VideoBalance::setContrast(double)
+double VideoBalance::contrast() const
 {
+	return filter->property("contrast").toByteArray().toDouble();
+}
 
+void VideoBalance::setHue(double value)
+{
+	if (value >= -1.0 && value <= 1.0)
+		filter->setProperty("hue", value);
+}
+
+void VideoBalance::setSaturation(double value)
+{
+	if (value >= -1.0 && value <= 1.0)
+		filter->setProperty("saturation", value + 1.0);
+}
+
+void VideoBalance::setBrightness(double value)
+{
+	if (value >= -1.0 && value <= 1.0)
+		filter->setProperty("brightness", value);
+}
+
+void VideoBalance::setContrast(double value)
+{
+	if (value >= -1.0 && value <= 1.0)
+		filter->setProperty("contrast", value + 1.0);
 }
 
 void VideoBalance::init()
 {
-	QGst::ElementPtr videosink = QGst::ElementFactory::make("xvimagesink");
-	balance = QGst::ElementFactory::make("videobalance");
-	bin = QGst::Bin::create("color");
-	bin->add(balance);
-	QGst::PadPtr pad = balance->getStaticPad("sink");
+	videosink = QGst::ElementFactory::make("xvimagesink");
+	filter = QGst::ElementFactory::make("videobalance");
+	bin = QGst::Bin::create("balance");
+
+	bin->add(filter);
+	QGst::PadPtr pad = filter->getStaticPad("sink");
 	QGst::GhostPadPtr ghostpad = QGst::GhostPad::create(pad, "sink");
 	bin->addPad(ghostpad);
 	bin->add(videosink);
-	balance->setProperty("contrast", 2.0);
-	balance->link(videosink);
+
+	filter->link(videosink);
 	pipeline->setProperty("video-sink", bin);
 }

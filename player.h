@@ -20,10 +20,10 @@ enum SeekFlag
 
 enum ColorBalance
 {
-	Contrast,
-	Brightness,
-	Hue,
-	Saturation
+    Contrast,
+    Brightness,
+    Hue,
+    Saturation
 };
 
 class GstTime
@@ -38,7 +38,10 @@ public:
 	qint32 Frame;
 	qint64 Msec;
 	qint64 Nsec;
-	bool Valid() { return (framerate > 0.0); }
+	bool Valid()
+	{
+		return (framerate > 0.0);
+	}
 	void moveMsec(qint64 msec);
 	void moveFrame(qint32 frame);
 private:

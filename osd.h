@@ -1,21 +1,20 @@
 #ifndef OSD_H
 #define OSD_H
 
-#include <QObject>
+#include "videofilter.h"
 #include <QTimer>
 #include <QGst/GhostPad>
 #include <QGst/Pipeline>
 
-class Osd : public QObject
+class Osd : public VideoFilter
 {
 	Q_OBJECT
 public:
 	explicit Osd(QObject *parent = 0);
 	Osd(QGst::PipelinePtr, QObject *parent = 0);
-	//void toggle();
+
 	void enable();
 	void disable();
-	QGst::BinPtr element() { return bin; }
 
 signals:
 
@@ -26,9 +25,6 @@ public slots:
 
 private:
 	void init();
-	QGst::PipelinePtr pipeline;
-	QGst::ElementPtr overlay;
-	QGst::BinPtr bin;
 	QString lasttext;
 	bool visible;
 	QTimer timer;

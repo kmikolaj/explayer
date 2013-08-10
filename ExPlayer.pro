@@ -23,7 +23,9 @@ SOURCES += main.cpp\
     osd.cpp \
     subtitleeditor.cpp \
     utils.cpp \
-    videobalance.cpp
+    videobalance.cpp \
+    videofilter.cpp \
+    jumpdialog.cpp
 
 HEADERS  += mainwindow.h \
     player.h \
@@ -33,10 +35,13 @@ HEADERS  += mainwindow.h \
     subtitleeditor.h \
     version.h \
     utils.h \
-    videobalance.h
+    videobalance.h \
+    videofilter.h \
+    jumpdialog.h
 
 FORMS    += mainwindow.ui \
-    controls.ui
+    controls.ui \
+    jumpdialog.ui
 
 OTHER_FILES += \
     README
