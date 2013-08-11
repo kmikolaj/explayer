@@ -182,6 +182,15 @@ double Player::volume() const
 	return 0.0;
 }
 
+double Player::brightness() const
+{
+	if (pipeline && balance && settings->Gui.Color)
+	{
+		return balance->brightness();
+	}
+	return 0.0;
+}
+
 void Player::setVolume(double volume)
 {
 	if (pipeline)
@@ -196,12 +205,11 @@ void Player::setVolume(double volume)
 	}
 }
 
-void Player::setBalance(ColorBalance type, int value)
+void Player::setBrightness(double brightness)
 {
-	if (pipeline && settings->Gui.Color)
+	if (pipeline && balance && settings->Gui.Color)
 	{
-//		QGst::ElementPtr sink = videoSink();
-//		QGst::ColorBalancePtr
+		balance->setBrightness(brightness);
 	}
 }
 
@@ -247,6 +255,30 @@ void Player::togglesubtitles()
 	}
 }
 
+void Player::toggletime()
+{
+	if (pipeline && osd)
+	{
+		osd->toggleTime();
+	}
+}
+
+void Player::mute()
+{
+	if (pipeline)
+	{
+		QGst::StreamVolumePtr svp =
+			pipeline.dynamicCast<QGst::StreamVolume>();
+
+		if (svp)
+		{
+			bool mute = svp->isMuted();
+			svp->setMuted(!mute);
+			osd->setText(mute ? "unmute" : "mute");
+		}
+	}
+}
+
 GstTime Player::length() const
 {
 	return (meta.isValid() ? meta.getDuration() : GstTime());
@@ -275,6 +307,7 @@ void Player::pause()
 {
 	if (pipeline)
 	{
+		//osd->clear();
 		//osd->setText("■"); nie działa
 		pipeline->setState(QGst::StatePaused);
 	}

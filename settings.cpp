@@ -81,6 +81,7 @@ void Settings::setDefault()
 	Keys.SeekBackward = QKeySequence(Qt::Key_Left);
 	Keys.NextFrame = QKeySequence(Qt::Key_Period);
 	Keys.PrevFrame = QKeySequence(Qt::Key_Comma);
+	Keys.Time =  QKeySequence(Qt::Key_O);
 	Keys.ContrastUp = QKeySequence(Qt::Key_1);
 	Keys.ContrastDown = QKeySequence(Qt::Key_2);
 	Keys.BrightnessDown = QKeySequence(Qt::Key_3);

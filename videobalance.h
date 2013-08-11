@@ -27,6 +27,7 @@ public slots:
 
 private:
 	void init();
+	QGst::ElementPtr balance;
 };
 
 #endif // VIDEOBALANCE_H

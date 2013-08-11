@@ -54,6 +54,8 @@ private slots:
 	void prevFrame();
 	void volumeUp();
 	void volumeDown();
+	void brightnessUp();
+	void brightnessDown();
 	void frameJump();
 	void timeJump();
 };

@@ -7,74 +7,83 @@ Osd::Osd(QObject *parent)
 }
 
 Osd::Osd(QGst::PipelinePtr pipe, QObject *parent)
-	: VideoFilter(pipe, parent), lasttext(QString()), visible(false)
+    : VideoFilter(pipe, parent), osdVisible(false), timeVisible(false)
 {
 	init();
 }
 
 void Osd::enable()
 {
-	if (!visible)
+	if (!osdVisible)
 	{
-		filter->setProperty("text", lasttext);
-		visible = true;
+		overlay->setProperty("silent", false);
+		osdVisible = true;
 	}
 }
 
 void Osd::disable()
 {
-	if (visible)
+	if (osdVisible)
 	{
-		filter->setProperty("text", QString());
-		visible = false;
+		overlay->setProperty("silent", true);
+		osdVisible = false;
 	}
 }
 
 void Osd::setText(const QString &text, const int time)
 {
-	if (visible)
+	if (osdVisible)
 	{
 		timer.setInterval(time);
 		timer.stop();
 		timer.start();
-		filter->setProperty("text", lasttext = text);
+		overlay->setProperty("text", text);
 	}
 }
 
-void Osd::showTime()
+void Osd::toggleTime()
 {
-	// TODO
+	time->setProperty("silent", timeVisible);
+	timeVisible = !timeVisible;
 }
 
 void Osd::clear()
 {
-	if (visible)
+	if (osdVisible)
 	{
-		filter->setProperty("text", QString());
+		overlay->setProperty("text", QString());
 	}
 }
 
 void Osd::init()
 {
 	videosink = QGst::ElementFactory::make("xvimagesink");
-	filter = QGst::ElementFactory::make("textoverlay");
+	overlay = QGst::ElementFactory::make("textoverlay");
+	time = QGst::ElementFactory::make("timeoverlay");
 	bin = QGst::Bin::create("osd");
 
-	bin->add(filter);
-	QGst::PadPtr pad = filter->getStaticPad("video_sink");
+	bin->add(overlay);
+	bin->add(time);
+	QGst::PadPtr pad = overlay->getStaticPad("video_sink");
 	QGst::GhostPadPtr ghostpad = QGst::GhostPad::create(pad, "sink");
 	bin->addPad(ghostpad);
 	bin->add(videosink);
 
-	filter->setProperty("text", lasttext);
-	filter->setProperty("valign", "top");
-	filter->setProperty("halign", "left");
-	filter->setProperty("shaded-background", true);
-	filter->setProperty("font-desc", "Sans Bold 16");
+	overlay->setProperty("text", QString());
+	overlay->setProperty("valign", "top");
+	overlay->setProperty("halign", "right");
+	overlay->setProperty("shaded-background", true);
+	overlay->setProperty("font-desc", "Sans Bold 16");
 
-	filter->link(videosink);
+	time->setProperty("halign", "left");
+	time->setProperty("silent", !timeVisible);
+
+	overlay->link(time);
+	time->link(videosink);
 	pipeline->setProperty("video-sink", bin);
-	visible = false;
+	osdVisible = false;
+
+	elements << overlay << time;
 
 	timer.setSingleShot(true);
 	connect(&timer, SIGNAL(timeout()), SLOT(clear()));

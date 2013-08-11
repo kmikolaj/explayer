@@ -4,21 +4,27 @@ void VideoFilter::link(VideoFilter *dest)
 {
 	if (videosink)
 	{
-		filter->unlink(videosink);
 		bin->remove(videosink);
-//		delete videosink;
+		videosink.clear();
 	}
 	videosink = dest->videosink;
-	if (dest->bin)
+	QVector<QGst::ElementPtr> elements = dest->getElements();
+	for (int i = 0; i < elements.size(); i++)
 	{
-		dest->bin->remove(dest->videosink);
-//		delete dest->bin;
+		dest->bin->remove(elements[i]);
+		bin->add(elements[i]);
 	}
-	dest->bin = bin;
-	bin->add(dest->filter);
+	for (int i = 0; i < elements.size(); i++)
+	{
+		if (i < elements.size() - 1)
+			elements[i]->link(elements[i + 1]);
+	}
+	dest->bin->remove(dest->videosink);
 	bin->add(dest->videosink);
-	filter->link(dest->filter);
-	dest->filter->link(dest->videosink);
+	dest->bin.clear();
+
+	getElements().last()->link(dest->getElements().first());
+	dest->getElements().last()->link(dest->videosink);
 }
 
 

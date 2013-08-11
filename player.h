@@ -100,11 +100,11 @@ public:
 	GstTime position() const;
 	void setPosition(const GstTime &pos, SeekFlag flag = None);
 	double volume() const;
+	double brightness() const;
 
 	QGst::State state() const;
 	GstTime length() const;
 	MetaData metadata() const;
-	QGst::PipelinePtr pipeline;
 
 public slots:
 	void play();
@@ -112,9 +112,11 @@ public slots:
 	void toggle();
 	void stop();
 	void setVolume(double volume);
-	void setBalance(ColorBalance type, int value);
+	void setBrightness(double brightness);
 	void forceaspectratio();
 	void togglesubtitles();
+	void toggletime();
+	void mute();
 
 signals:
 	void positionChanged();
@@ -126,7 +128,7 @@ private:
 	void extractMetaData();
 	void setHardwareAcceleration(bool enable);
 
-	//QGst::PipelinePtr pipeline;
+	QGst::PipelinePtr pipeline;
 	QString videouri;
 	QString suburi;
 	bool subtitles;

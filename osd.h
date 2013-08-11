@@ -20,13 +20,15 @@ signals:
 
 public slots:
 	void setText(const QString &text, const int time = 1000);
-	void showTime();
+	void toggleTime();
 	void clear();
 
 private:
 	void init();
-	QString lasttext;
-	bool visible;
+	bool osdVisible;
+	bool timeVisible;
+	QGst::ElementPtr overlay;
+	QGst::ElementPtr time;
 	QTimer timer;
 };
 

@@ -67,6 +67,7 @@ public:
 		QKeySequence SeekBackward;
 		QKeySequence NextFrame;
 		QKeySequence PrevFrame;
+		QKeySequence Time;
 		QKeySequence BrightnessUp;
 		QKeySequence BrightnessDown;
 		QKeySequence ContrastUp;

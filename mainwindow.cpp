@@ -37,10 +37,21 @@ MainWindow::MainWindow(QWidget *parent) :
 	addHotkey(settings->Keys.SeekBackward, this, SLOT(seekBackward()));
 	addHotkey(settings->Keys.VolumeUp, this, SLOT(volumeUp()));
 	addHotkey(settings->Keys.VolumeDown, this, SLOT(volumeDown()));
+	addHotkey(settings->Keys.Mute, ui->video, SLOT(mute()));
 	addHotkey(settings->Keys.FrameJump, this, SLOT(frameJump()));
 	addHotkey(settings->Keys.TimeJump, this, SLOT(timeJump()));
 	addHotkey(settings->Keys.NextFrame, this, SLOT(nextFrame()));
 	addHotkey(settings->Keys.PrevFrame, this, SLOT(prevFrame()));
+	addHotkey(settings->Keys.Time, ui->video, SLOT(toggletime()));
+
+//	Keys.ContrastUp = QKeySequence(Qt::Key_1);
+//	Keys.ContrastDown = QKeySequence(Qt::Key_2);
+	addHotkey(settings->Keys.BrightnessUp, this, SLOT(brightnessUp()));
+	addHotkey(settings->Keys.BrightnessDown, this, SLOT(brightnessDown()));
+//	Keys.SaturationUp = QKeySequence(Qt::Key_5);
+//	Keys.SaturationDown = QKeySequence(Qt::Key_6);
+//	Keys.HueUp = QKeySequence(Qt::Key_7);
+//	Keys.HueDown = QKeySequence(Qt::Key_8);
 
 	// jumper dialog
 	jumper = new JumpDialog(this);
@@ -281,6 +292,16 @@ void MainWindow::volumeDown()
 		ui->video->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, newVol));
 		ui->controls->setVolume(newVol * 100);
 	}
+}
+
+void MainWindow::brightnessUp()
+{
+	ui->video->setBrightness(ui->video->brightness() + 0.1);
+}
+
+void MainWindow::brightnessDown()
+{
+	ui->video->setBrightness(ui->video->brightness() - 0.1);
 }
 
 void MainWindow::frameJump()
