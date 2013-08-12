@@ -53,25 +53,29 @@ class MetaData
 public:
 	MetaData();
 	MetaData(const QGst::DiscovererInfoPtr &_info);
-	double getFramerate() const
+	inline double getFramerate() const
 	{
 		return framerate;
 	}
-	GstTime getDuration() const
+	inline GstTime getDuration() const
 	{
 		return duration;
 	}
-	quint64 getSize() const
+	inline quint64 getSize() const
 	{
 		return size;
 	}
-	QString getFileName() const
+	inline QString getFileName() const
 	{
 		return filename;
 	}
-	bool isValid() const
+	inline bool isValid() const
 	{
 		return valid;
+	}
+	inline QGst::TagList getTags() const
+	{
+		return tags;
 	}
 private:
 	QGst::DiscovererInfoPtr info;
@@ -82,6 +86,7 @@ private:
 	quint32 frames;
 	quint64 size;
 	QString filename;
+	QGst::TagList tags;
 
 	void init();
 };
@@ -100,7 +105,10 @@ public:
 	GstTime position() const;
 	void setPosition(const GstTime &pos, SeekFlag flag = None);
 	double volume() const;
+	double hue() const;
+	double saturation() const;
 	double brightness() const;
+	double contrast() const;
 
 	QGst::State state() const;
 	GstTime length() const;
@@ -112,7 +120,10 @@ public slots:
 	void toggle();
 	void stop();
 	void setVolume(double volume);
+	void setHue(double hue);
+	void setSaturation(double saturation);
 	void setBrightness(double brightness);
+	void setContrast(double contrast);
 	void forceaspectratio();
 	void togglesubtitles();
 	void toggletime();

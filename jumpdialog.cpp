@@ -2,8 +2,8 @@
 #include "ui_jumpdialog.h"
 
 JumpDialog::JumpDialog(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::JumpDialog)
+	QDialog(parent),
+	ui(new Ui::JumpDialog)
 {
 	ui->setupUi(this);
 }

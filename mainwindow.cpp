@@ -43,15 +43,14 @@ MainWindow::MainWindow(QWidget *parent) :
 	addHotkey(settings->Keys.NextFrame, this, SLOT(nextFrame()));
 	addHotkey(settings->Keys.PrevFrame, this, SLOT(prevFrame()));
 	addHotkey(settings->Keys.Time, ui->video, SLOT(toggletime()));
-
-//	Keys.ContrastUp = QKeySequence(Qt::Key_1);
-//	Keys.ContrastDown = QKeySequence(Qt::Key_2);
+	addHotkey(settings->Keys.HueUp, this, SLOT(hueUp()));
+	addHotkey(settings->Keys.HueDown, this, SLOT(hueDown()));
+	addHotkey(settings->Keys.SaturationUp, this, SLOT(saturationUp()));
+	addHotkey(settings->Keys.SaturationDown, this, SLOT(saturationDown()));
 	addHotkey(settings->Keys.BrightnessUp, this, SLOT(brightnessUp()));
 	addHotkey(settings->Keys.BrightnessDown, this, SLOT(brightnessDown()));
-//	Keys.SaturationUp = QKeySequence(Qt::Key_5);
-//	Keys.SaturationDown = QKeySequence(Qt::Key_6);
-//	Keys.HueUp = QKeySequence(Qt::Key_7);
-//	Keys.HueDown = QKeySequence(Qt::Key_8);
+	addHotkey(settings->Keys.ContrastUp, this, SLOT(contrastUp()));
+	addHotkey(settings->Keys.ContrastDown, this, SLOT(contrastDown()));
 
 	// jumper dialog
 	jumper = new JumpDialog(this);
@@ -83,11 +82,21 @@ void MainWindow::openFile()
 
 void MainWindow::playFile(const QString &filename)
 {
-	ui->video->stop();
-	ui->video->setUri(filename);
 	QString subfilename = filename.left(filename.lastIndexOf('.')) + ".txt";
-	ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
-	ui->video->play();
+	QFile film(filename);
+	QFile subtitles(subfilename);
+	if (film.exists())
+	{
+		ui->video->stop();
+		ui->video->setUri(filename);
+		if (subtitles.exists())
+		{
+			ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
+			ui->editor->loadSubtitles(subfilename);
+			ui->editor->saveSubtitles("/home/kuba/dupa.txt");
+		}
+		ui->video->play();
+	}
 }
 
 void MainWindow::playUrl(const QUrl &url)
@@ -117,8 +126,10 @@ void MainWindow::seek(int seconds)
 	newPos.moveMsec(1000 * seconds);
 	if (newPos.Time >= QTime(0, 0) && newPos.Time <= ui->video->length().Time)
 	{
-//		ui->video->setPosition(newPos, SeekFlag(Accurate));
-		ui->video->setPosition(newPos);
+		if (ui->video->metadata().getTags().containerFormat() == "ASF")
+			ui->video->setPosition(newPos, Accurate);
+		else
+			ui->video->setPosition(newPos);
 		updateStatus(newPos, ui->video->length());
 	}
 }
@@ -294,6 +305,26 @@ void MainWindow::volumeDown()
 	}
 }
 
+void MainWindow::hueUp()
+{
+	ui->video->setHue(ui->video->hue() + 0.1);
+}
+
+void MainWindow::hueDown()
+{
+	ui->video->setHue(ui->video->hue() - 0.1);
+}
+
+void MainWindow::saturationUp()
+{
+	ui->video->setSaturation(ui->video->saturation() + 0.1);
+}
+
+void MainWindow::saturationDown()
+{
+	ui->video->setSaturation(ui->video->saturation() - 0.1);
+}
+
 void MainWindow::brightnessUp()
 {
 	ui->video->setBrightness(ui->video->brightness() + 0.1);
@@ -302,6 +333,16 @@ void MainWindow::brightnessUp()
 void MainWindow::brightnessDown()
 {
 	ui->video->setBrightness(ui->video->brightness() - 0.1);
+}
+
+void MainWindow::contrastUp()
+{
+	ui->video->setContrast(ui->video->contrast() + 0.1);
+}
+
+void MainWindow::contrastDown()
+{
+	ui->video->setContrast(ui->video->contrast() - 0.1);
 }
 
 void MainWindow::frameJump()

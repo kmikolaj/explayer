@@ -11,11 +11,14 @@ class VideoFilter : public QObject
 public:
 	explicit VideoFilter(QObject *parent = 0) : QObject(parent) {}
 	VideoFilter(QGst::PipelinePtr pipe, QObject *parent)
-	    : QObject(parent), pipeline(pipe) {}
+		: QObject(parent), pipeline(pipe) {}
 
 	void link(VideoFilter *dest);
 	void unlink(VideoFilter *dest);
-	inline QVector<QGst::ElementPtr> getElements() { return elements; }
+	inline QVector<QGst::ElementPtr> getElements()
+	{
+		return elements;
+	}
 
 protected:
 	QVector<QGst::ElementPtr> elements;

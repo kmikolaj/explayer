@@ -7,7 +7,7 @@ Osd::Osd(QObject *parent)
 }
 
 Osd::Osd(QGst::PipelinePtr pipe, QObject *parent)
-    : VideoFilter(pipe, parent), osdVisible(false), timeVisible(false)
+	: VideoFilter(pipe, parent), osdVisible(false), timeVisible(false)
 {
 	init();
 }

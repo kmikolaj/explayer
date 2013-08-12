@@ -18,13 +18,12 @@ double GstTime::framerate = 0.0;
 Player::Player(QWidget *parent)
 	: QGst::Ui::VideoWidget(parent)
 {
-	//this timer is used to tell the ui to change its position slider & label
-	//every 100 ms, but only when the pipeline is playing
 	connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
 	settings = Settings::GetSettings(this);
 	subtitles = settings->Video.Subtitles;
 	aspectratio = settings->Video.ForceAspectRatio;
 	setHardwareAcceleration(settings->Video.VAAPI);
+	this->setAttribute(Qt::WA_PaintOnScreen, false);
 }
 
 Player::~Player()
@@ -182,11 +181,38 @@ double Player::volume() const
 	return 0.0;
 }
 
+double Player::hue() const
+{
+	if (pipeline && balance && settings->Gui.Color)
+	{
+		return balance->hue();
+	}
+	return 0.0;
+}
+
+double Player::saturation() const
+{
+	if (pipeline && balance && settings->Gui.Color)
+	{
+		return balance->saturation();
+	}
+	return 0.0;
+}
+
 double Player::brightness() const
 {
 	if (pipeline && balance && settings->Gui.Color)
 	{
 		return balance->brightness();
+	}
+	return 0.0;
+}
+
+double Player::contrast() const
+{
+	if (pipeline && balance && settings->Gui.Color)
+	{
+		return balance->contrast();
 	}
 	return 0.0;
 }
@@ -205,11 +231,35 @@ void Player::setVolume(double volume)
 	}
 }
 
+void Player::setHue(double hue)
+{
+	if (pipeline && balance && settings->Gui.Color)
+	{
+		balance->setHue(hue);
+	}
+}
+
+void Player::setSaturation(double saturation)
+{
+	if (pipeline && balance && settings->Gui.Color)
+	{
+		balance->setSaturation(saturation);
+	}
+}
+
 void Player::setBrightness(double brightness)
 {
 	if (pipeline && balance && settings->Gui.Color)
 	{
 		balance->setBrightness(brightness);
+	}
+}
+
+void Player::setContrast(double contrast)
+{
+	if (pipeline && balance && settings->Gui.Color)
+	{
+		balance->setContrast(contrast);
 	}
 }
 
@@ -268,7 +318,7 @@ void Player::mute()
 	if (pipeline)
 	{
 		QGst::StreamVolumePtr svp =
-			pipeline.dynamicCast<QGst::StreamVolume>();
+		    pipeline.dynamicCast<QGst::StreamVolume>();
 
 		if (svp)
 		{
@@ -385,6 +435,7 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 	}
 	case QGst::StateNull:
 		positionTimer.stop();
+		this->setAttribute(Qt::WA_PaintOnScreen, false);
 		break;
 	default:
 		break;
@@ -399,7 +450,7 @@ MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
 	if (info->videoStreams().size() > 0)
 	{
 		videoInfo = info->videoStreams()[0].dynamicCast<QGst::DiscovererVideoInfo>();
-
+		tags = info->tags();
 		framerate = double(videoInfo->framerate().numerator) /
 		            double(videoInfo->framerate().denominator);
 		GstTime::setFps(framerate);

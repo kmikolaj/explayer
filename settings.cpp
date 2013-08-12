@@ -100,6 +100,7 @@ void Settings::readLastPositions()
 	QList<QByteArray> line;
 	if (file.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
+		// while
 		line = file.readLine().split('=');
 		if (line.size() > 1)
 		{
