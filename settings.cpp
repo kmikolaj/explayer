@@ -4,7 +4,7 @@
 
 Settings *Settings::GetSettings(QObject *parent)
 {
-	static Settings *settings = NULL;
+	static Settings *settings = nullptr;
 	if (!settings)
 	{
 		settings = new Settings(parent);
@@ -67,31 +67,36 @@ void Settings::setDefault()
 	QDir("/").mkpath(dir);
 	Gui.LastPositionFile = dir + "/positions";
 
-	// hotkeys
-	Keys.VolumeUp = QKeySequence(Qt::KeypadModifier | Qt::Key_Asterisk);
-	Keys.VolumeDown = QKeySequence(Qt::KeypadModifier | Qt::Key_Slash);
-	Keys.Mute = QKeySequence(Qt::Key_M);
-	Keys.FullScreen = QKeySequence(Qt::Key_F);
-	Keys.Subtitles = QKeySequence(Qt::Key_S);
-	Keys.AspectRatio = QKeySequence(Qt::Key_R);
-	Keys.PlayPause = QKeySequence(Qt::Key_Space);
-	Keys.Editor = QKeySequence(Qt::Key_Tab);
-	Keys.Stop = QKeySequence(Qt::ShiftModifier | Qt::Key_S);
-	Keys.SeekForward = QKeySequence(Qt::Key_Right);
-	Keys.SeekBackward = QKeySequence(Qt::Key_Left);
-	Keys.NextFrame = QKeySequence(Qt::Key_Period);
-	Keys.PrevFrame = QKeySequence(Qt::Key_Comma);
-	Keys.Time =  QKeySequence(Qt::Key_O);
-	Keys.ContrastUp = QKeySequence(Qt::Key_1);
-	Keys.ContrastDown = QKeySequence(Qt::Key_2);
-	Keys.BrightnessDown = QKeySequence(Qt::Key_3);
-	Keys.BrightnessUp = QKeySequence(Qt::Key_4);
-	Keys.SaturationUp = QKeySequence(Qt::Key_5);
-	Keys.SaturationDown = QKeySequence(Qt::Key_6);
-	Keys.HueUp = QKeySequence(Qt::Key_7);
-	Keys.HueDown = QKeySequence(Qt::Key_8);
-	Keys.FrameJump = QKeySequence(Qt::ControlModifier | Qt::Key_G);
-	Keys.TimeJump = QKeySequence(Qt::ControlModifier | Qt::Key_T);
+	// hotkeys player
+	KeysPlayer.VolumeUp = QKeySequence(Qt::KeypadModifier | Qt::Key_Asterisk);
+	KeysPlayer.VolumeDown = QKeySequence(Qt::KeypadModifier | Qt::Key_Slash);
+	KeysPlayer.Mute = QKeySequence(Qt::Key_M);
+	KeysPlayer.FullScreen = QKeySequence(Qt::Key_F);
+	KeysPlayer.Subtitles = QKeySequence(Qt::Key_S);
+	KeysPlayer.AspectRatio = QKeySequence(Qt::Key_R);
+	KeysPlayer.PlayPause = QKeySequence(Qt::Key_Space);
+	KeysPlayer.Editor = QKeySequence(Qt::Key_Tab);
+	KeysPlayer.Stop = QKeySequence(Qt::ShiftModifier | Qt::Key_S);
+	KeysPlayer.SeekForward = QKeySequence(Qt::Key_Right);
+	KeysPlayer.SeekBackward = QKeySequence(Qt::Key_Left);
+	KeysPlayer.NextFrame = QKeySequence(Qt::Key_Period);
+	KeysPlayer.PrevFrame = QKeySequence(Qt::Key_Comma);
+	KeysPlayer.Time =  QKeySequence(Qt::Key_O);
+	KeysPlayer.ContrastUp = QKeySequence(Qt::Key_1);
+	KeysPlayer.ContrastDown = QKeySequence(Qt::Key_2);
+	KeysPlayer.BrightnessDown = QKeySequence(Qt::Key_3);
+	KeysPlayer.BrightnessUp = QKeySequence(Qt::Key_4);
+	KeysPlayer.SaturationUp = QKeySequence(Qt::Key_5);
+	KeysPlayer.SaturationDown = QKeySequence(Qt::Key_6);
+	KeysPlayer.HueUp = QKeySequence(Qt::Key_7);
+	KeysPlayer.HueDown = QKeySequence(Qt::Key_8);
+	KeysPlayer.FrameJump = QKeySequence(Qt::ControlModifier | Qt::Key_G);
+	KeysPlayer.TimeJump = QKeySequence(Qt::ControlModifier | Qt::Key_T);
+
+	// hotkeys editor
+	KeysEditor.JumpToSub = QKeySequence(Qt::ControlModifier | Qt::Key_P);
+	KeysEditor.ReplaceStartFrame = QKeySequence(Qt::Key_Insert);
+	KeysEditor.ReplaceEndFrame = QKeySequence(Qt::MetaModifier | Qt::AltModifier | Qt::Key_Insert);
 }
 
 void Settings::readLastPositions()

@@ -78,7 +78,14 @@ public:
 		QKeySequence HueDown;
 		QKeySequence FrameJump;
 		QKeySequence TimeJump;
-	} Keys;
+	} KeysPlayer;
+
+	struct
+	{
+		QKeySequence JumpToSub;
+		QKeySequence ReplaceStartFrame;
+		QKeySequence ReplaceEndFrame;
+	} KeysEditor;
 
 private:
 	Settings(QObject *parent = 0);

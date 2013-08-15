@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->setupUi(this);
 
 	settings = Settings::GetSettings(this);
+	ui->editor->setPlayer(ui->video);
 
 	// Video Widget
 	connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
@@ -25,32 +26,33 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	// Editor Widget
 	connect(ui->editor, SIGNAL(hideWindow()), this, SLOT(toggleeditor()));
+	connect(ui->editor, SIGNAL(jump(qint32)), this, SLOT(seekFrame(qint32)));
 
 	// hotkeys
-	addHotkey(settings->Keys.PlayPause, ui->video, SLOT(toggle()));
-	addHotkey(settings->Keys.Stop, ui->video, SLOT(stop()));
-	addHotkey(settings->Keys.FullScreen, this, SLOT(fullScreen()));
-	addHotkey(settings->Keys.Editor, this, SLOT(toggleeditor()));
-	addHotkey(settings->Keys.Subtitles, ui->video, SLOT(togglesubtitles()));
-	addHotkey(settings->Keys.AspectRatio, ui->video, SLOT(forceaspectratio()));
-	addHotkey(settings->Keys.SeekForward, this, SLOT(seekForward()));
-	addHotkey(settings->Keys.SeekBackward, this, SLOT(seekBackward()));
-	addHotkey(settings->Keys.VolumeUp, this, SLOT(volumeUp()));
-	addHotkey(settings->Keys.VolumeDown, this, SLOT(volumeDown()));
-	addHotkey(settings->Keys.Mute, ui->video, SLOT(mute()));
-	addHotkey(settings->Keys.FrameJump, this, SLOT(frameJump()));
-	addHotkey(settings->Keys.TimeJump, this, SLOT(timeJump()));
-	addHotkey(settings->Keys.NextFrame, this, SLOT(nextFrame()));
-	addHotkey(settings->Keys.PrevFrame, this, SLOT(prevFrame()));
-	addHotkey(settings->Keys.Time, ui->video, SLOT(toggletime()));
-	addHotkey(settings->Keys.HueUp, this, SLOT(hueUp()));
-	addHotkey(settings->Keys.HueDown, this, SLOT(hueDown()));
-	addHotkey(settings->Keys.SaturationUp, this, SLOT(saturationUp()));
-	addHotkey(settings->Keys.SaturationDown, this, SLOT(saturationDown()));
-	addHotkey(settings->Keys.BrightnessUp, this, SLOT(brightnessUp()));
-	addHotkey(settings->Keys.BrightnessDown, this, SLOT(brightnessDown()));
-	addHotkey(settings->Keys.ContrastUp, this, SLOT(contrastUp()));
-	addHotkey(settings->Keys.ContrastDown, this, SLOT(contrastDown()));
+	addHotkey(settings->KeysPlayer.PlayPause, ui->video, SLOT(toggle()));
+	addHotkey(settings->KeysPlayer.Stop, ui->video, SLOT(stop()));
+	addHotkey(settings->KeysPlayer.FullScreen, this, SLOT(fullScreen()));
+	addHotkey(settings->KeysPlayer.Editor, this, SLOT(toggleeditor()));
+	addHotkey(settings->KeysPlayer.Subtitles, ui->video, SLOT(togglesubtitles()));
+	addHotkey(settings->KeysPlayer.AspectRatio, ui->video, SLOT(forceaspectratio()));
+	addHotkey(settings->KeysPlayer.SeekForward, this, SLOT(seekForward()));
+	addHotkey(settings->KeysPlayer.SeekBackward, this, SLOT(seekBackward()));
+	addHotkey(settings->KeysPlayer.VolumeUp, this, SLOT(volumeUp()));
+	addHotkey(settings->KeysPlayer.VolumeDown, this, SLOT(volumeDown()));
+	addHotkey(settings->KeysPlayer.Mute, ui->video, SLOT(mute()));
+	addHotkey(settings->KeysPlayer.FrameJump, this, SLOT(frameJump()));
+	addHotkey(settings->KeysPlayer.TimeJump, this, SLOT(timeJump()));
+	addHotkey(settings->KeysPlayer.NextFrame, this, SLOT(nextFrame()));
+	addHotkey(settings->KeysPlayer.PrevFrame, this, SLOT(prevFrame()));
+	addHotkey(settings->KeysPlayer.Time, ui->video, SLOT(toggletime()));
+	addHotkey(settings->KeysPlayer.HueUp, this, SLOT(hueUp()));
+	addHotkey(settings->KeysPlayer.HueDown, this, SLOT(hueDown()));
+	addHotkey(settings->KeysPlayer.SaturationUp, this, SLOT(saturationUp()));
+	addHotkey(settings->KeysPlayer.SaturationDown, this, SLOT(saturationDown()));
+	addHotkey(settings->KeysPlayer.BrightnessUp, this, SLOT(brightnessUp()));
+	addHotkey(settings->KeysPlayer.BrightnessDown, this, SLOT(brightnessDown()));
+	addHotkey(settings->KeysPlayer.ContrastUp, this, SLOT(contrastUp()));
+	addHotkey(settings->KeysPlayer.ContrastDown, this, SLOT(contrastDown()));
 
 	// jumper dialog
 	jumper = new JumpDialog(this);
@@ -193,10 +195,16 @@ void MainWindow::stateUpdate()
 	ui->controls->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic,
 	                        QGst::StreamVolumeFormatLinear,
 	                        ui->video->volume()) * 100);
-	if (newState == QGst::StateNull)
+
+	switch (newState)
 	{
-		positionUpdate();
+	case QGst::StateNull:
 		ui->video->update();
+	//case QGst::StatePaused:
+		positionUpdate();
+		break;
+	default:
+		break;
 	}
 }
 
@@ -260,6 +268,15 @@ void MainWindow::seekBackward()
 	    ui->video->state() != QGst::StateNull)
 	{
 		seek(-1 * settings->Video.SeekShort);
+	}
+}
+
+void MainWindow::seekFrame(qint32 frame)
+{
+	if (ui->video->state() != QGst::StateReady &&
+	    ui->video->state() != QGst::StateNull)
+	{
+		gotoFrame(frame, false);
 	}
 }
 

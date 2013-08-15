@@ -23,7 +23,6 @@ Player::Player(QWidget *parent)
 	subtitles = settings->Video.Subtitles;
 	aspectratio = settings->Video.ForceAspectRatio;
 	setHardwareAcceleration(settings->Video.VAAPI);
-	this->setAttribute(Qt::WA_PaintOnScreen, false);
 }
 
 Player::~Player()
@@ -76,6 +75,7 @@ void Player::setUri(const QString &uri)
 		videouri = realUri;
 		pipeline->setProperty("uri", videouri);
 		extractMetaData();
+		this->setAttribute(Qt::WA_PaintOnScreen, true);
 	}
 }
 
@@ -383,6 +383,7 @@ void Player::stop()
 	if (pipeline)
 	{
 		pipeline->setState(QGst::StateNull);
+		this->setAttribute(Qt::WA_PaintOnScreen, false);
 		emit stateChanged();
 	}
 }
@@ -415,7 +416,7 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 	{
 	case QGst::StatePlaying:
 		//start the timer when the pipeline starts playing
-		positionTimer.start(100);
+		positionTimer.start(42); // TODO: 1000/fps
 		break;
 	case QGst::StatePaused:
 		//stop the timer when the pipeline pauses
@@ -435,7 +436,6 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 	}
 	case QGst::StateNull:
 		positionTimer.stop();
-		this->setAttribute(Qt::WA_PaintOnScreen, false);
 		break;
 	default:
 		break;

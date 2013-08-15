@@ -42,7 +42,7 @@ private:
 	void gotoTime(const QTime &time, bool pause = false);
 	void updateStatus(const GstTime &position, const GstTime &length);
 
-private slots:
+public slots:
 	void positionUpdate();
 	void stateUpdate();
 	void open();
@@ -50,6 +50,7 @@ private slots:
 	void fullScreen();
 	void seekForward();
 	void seekBackward();
+	void seekFrame(qint32 frame);
 	void nextFrame();
 	void prevFrame();
 	void volumeUp();
