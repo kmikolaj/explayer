@@ -25,6 +25,7 @@ public:
 
 	void openFile();
 	void playFile(const QString &filename);
+	void startPlaying(const QString &url);
 	void playUrl(const QUrl &url);
 	void addHotkey(const QString &key, const QObject *obj, const char *slot);
 	void addHotkey(const QKeySequence &key, const QObject *obj, const char *slot);
@@ -36,6 +37,7 @@ private:
 	QVector<QShortcut *> hotkeys;
 	bool editor;
 	JumpDialog *jumper;
+	QString url;
 
 	void seek(int seconds);
 	void gotoFrame(qint32 frame, bool pause = false);
@@ -46,6 +48,7 @@ public slots:
 	void positionUpdate();
 	void stateUpdate();
 	void open();
+	void play();
 	void toggleeditor();
 	void fullScreen();
 	void seekForward();

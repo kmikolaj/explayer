@@ -95,6 +95,7 @@ void Settings::setDefault()
 
 	// hotkeys editor
 	KeysEditor.JumpToSub = QKeySequence(Qt::ControlModifier | Qt::Key_P);
+	KeysEditor.SaveSub = QKeySequence(Qt::ControlModifier | Qt::Key_S);
 	KeysEditor.ReplaceStartFrame = QKeySequence(Qt::Key_Insert);
 	KeysEditor.ReplaceEndFrame = QKeySequence(Qt::MetaModifier | Qt::AltModifier | Qt::Key_Insert);
 }

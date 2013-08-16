@@ -10,6 +10,7 @@ SubtitleEditor::SubtitleEditor(QWidget *parent) :
 {
 	setViewportMargins(-4, -5, -4, -5);
 	connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(on_cursorPositionChanged()));
+	connect(this, SIGNAL(save()), this, SLOT(on_save()));
 	highlightLine();
 	setFont(QFont("monospace"));
 	settings = Settings::GetSettings(this);
@@ -37,6 +38,7 @@ void SubtitleEditor::loadSubtitles(const QString &filename)
 	QFile file(filename);
 	if (file.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
+		subFilename = filename;
 		QTextCodec* codec = QTextCodec::codecForName(settings->Subtitles.Encoding.toLocal8Bit());
 		QTextStream stream(&file);
 		stream.setCodec(codec);
@@ -73,6 +75,10 @@ void SubtitleEditor::keyPressEvent(QKeyEvent *e)
 		{
 			replace("\\{(\\d+)\\}", QString::number(frame), 2);
 		}
+	}
+	else if (sequence == settings->KeysEditor.SaveSub)
+	{
+		emit save();
 	}
 	else
 		QPlainTextEdit::keyPressEvent(e);
@@ -140,4 +146,10 @@ void SubtitleEditor::replace(const QString &pattern, const QString &str, int n)
 void SubtitleEditor::on_cursorPositionChanged()
 {
 	highlightLine();
+}
+
+void SubtitleEditor::on_save()
+{
+	if (!subFilename.isEmpty())
+		saveSubtitles(subFilename);
 }

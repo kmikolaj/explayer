@@ -83,6 +83,7 @@ public:
 	struct
 	{
 		QKeySequence JumpToSub;
+		QKeySequence SaveSub;
 		QKeySequence ReplaceStartFrame;
 		QKeySequence ReplaceEndFrame;
 	} KeysEditor;

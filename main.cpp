@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 
 	if (argc > 1)
 	{
-		w.playFile(argv[1]);
+		w.startPlaying(argv[1]);
 	}
 
 	return a.exec();

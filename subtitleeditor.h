@@ -25,12 +25,16 @@ private:
 	bool currentFrame(qint32 &frame);
 	void replace(const QString &pattern, const QString &str, int n);
 
+	QString subFilename;
+
 signals:
 	void hideWindow();
 	void jump(qint32);
+	void save();
 
 public slots:
 	void on_cursorPositionChanged();
+	void on_save();
 };
 
 #endif // SUBTITLEEDITOR_H

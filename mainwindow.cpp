@@ -6,7 +6,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
-	ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow)
 {
 	ui->setupUi(this);
 
@@ -95,10 +95,16 @@ void MainWindow::playFile(const QString &filename)
 		{
 			ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
 			ui->editor->loadSubtitles(subfilename);
-			ui->editor->saveSubtitles("/home/kuba/dupa.txt");
 		}
 		ui->video->play();
 	}
+}
+
+void MainWindow::startPlaying(const QString &url)
+{
+	// detekcja czy lokalny
+	this->url = url;
+	QTimer::singleShot(50, this, SLOT(play()));
 }
 
 void MainWindow::playUrl(const QUrl &url)
@@ -211,6 +217,11 @@ void MainWindow::stateUpdate()
 void MainWindow::open()
 {
 	openFile();
+}
+
+void MainWindow::play()
+{
+	playFile(url);
 }
 
 void MainWindow::toggleeditor()
