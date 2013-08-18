@@ -416,7 +416,7 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 	{
 	case QGst::StatePlaying:
 		//start the timer when the pipeline starts playing
-		positionTimer.start(42); // TODO: 1000/fps
+		positionTimer.start(int(1000.0 / meta.getFramerate()));
 		break;
 	case QGst::StatePaused:
 		//stop the timer when the pipeline pauses

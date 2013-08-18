@@ -6,7 +6,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
-    ui(new Ui::MainWindow)
+	ui(new Ui::MainWindow)
 {
 	ui->setupUi(this);
 
@@ -22,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->controls, SIGNAL(pause()), ui->video, SLOT(pause()));
 	connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
 	connect(ui->controls, SIGNAL(open()), this, SLOT(open()));
+	connect(ui->controls, SIGNAL(nextFrame()), this, SLOT(nextFrame()));
+	connect(ui->controls, SIGNAL(prevFrame()), this, SLOT(prevFrame()));
 	connect(ui->controls, SIGNAL(volumeChanged(double)), ui->video, SLOT(setVolume(double)));
 
 	// Editor Widget
@@ -39,7 +41,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	addHotkey(settings->KeysPlayer.SeekBackward, this, SLOT(seekBackward()));
 	addHotkey(settings->KeysPlayer.VolumeUp, this, SLOT(volumeUp()));
 	addHotkey(settings->KeysPlayer.VolumeDown, this, SLOT(volumeDown()));
-	addHotkey(settings->KeysPlayer.Mute, ui->video, SLOT(mute()));
 	addHotkey(settings->KeysPlayer.FrameJump, this, SLOT(frameJump()));
 	addHotkey(settings->KeysPlayer.TimeJump, this, SLOT(timeJump()));
 	addHotkey(settings->KeysPlayer.NextFrame, this, SLOT(nextFrame()));
@@ -54,13 +55,21 @@ MainWindow::MainWindow(QWidget *parent) :
 	addHotkey(settings->KeysPlayer.ContrastUp, this, SLOT(contrastUp()));
 	addHotkey(settings->KeysPlayer.ContrastDown, this, SLOT(contrastDown()));
 
+	{
+		QMap<const char *, const QObject *> slot;
+		slot.insert(SLOT(mute()), ui->video);
+		slot.insert(SLOT(toggleMute()), ui->controls);
+		addHotkey(settings->KeysPlayer.Mute, slot);
+	}
+
 	// jumper dialog
 	jumper = new JumpDialog(this);
 
+	// opener = new OpenDialog(this);
+
 	// on start
+	ui->controls->onStateStopped();
 	positionUpdate();
-	if (!(editor = settings->Gui.Editor))
-		ui->editor->hide();
 }
 
 MainWindow::~MainWindow()
@@ -114,17 +123,18 @@ void MainWindow::playUrl(const QUrl &url)
 	ui->video->play();
 }
 
-void MainWindow::addHotkey(const QString &key, const QObject *obj, const char *slot)
+void MainWindow::addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot)
 {
-	QShortcut *shortcut = new QShortcut(QKeySequence(key), this);
-	hotkeys.append(shortcut);
-	connect(shortcut, SIGNAL(activated()), obj, slot);
+	QShortcut *shortcut = new QShortcut(key, this);
+	hotkeys.push_back(shortcut);
+	foreach(const char * i, slot.keys())
+	connect(shortcut, SIGNAL(activated()), slot[i], i);
 }
 
 void MainWindow::addHotkey(const QKeySequence &key, const QObject *obj, const char *slot)
 {
 	QShortcut *shortcut = new QShortcut(key, this);
-	hotkeys.append(shortcut);
+	hotkeys.push_back(shortcut);
 	connect(shortcut, SIGNAL(activated()), obj, slot);
 }
 
@@ -206,8 +216,15 @@ void MainWindow::stateUpdate()
 	{
 	case QGst::StateNull:
 		ui->video->update();
-	//case QGst::StatePaused:
+		ui->controls->onStateStopped();
 		positionUpdate();
+		break;
+	case QGst::StatePaused:
+		ui->controls->onStatePaused();
+		positionUpdate();
+		break;
+	case QGst::StatePlaying:
+		ui->controls->onStatePlaying();
 		break;
 	default:
 		break;
@@ -224,9 +241,14 @@ void MainWindow::play()
 	playFile(url);
 }
 
+void MainWindow::play(QString)
+{
+	//
+}
+
 void MainWindow::toggleeditor()
 {
-	if (editor)
+	if (ui->editor->isVisible())
 	{
 		ui->editor->hide();
 		ui->centralWidget->setFocus();
@@ -236,7 +258,6 @@ void MainWindow::toggleeditor()
 		ui->editor->show();
 		ui->editor->setFocus();
 	}
-	editor = !editor;
 }
 
 void MainWindow::fullScreen()

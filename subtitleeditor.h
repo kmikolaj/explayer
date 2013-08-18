@@ -12,18 +12,21 @@ public:
 	explicit SubtitleEditor(QWidget *parent = 0);
 	void loadSubtitles(const QString &filename);
 	void saveSubtitles(const QString &filename);
-	void setPlayer(Player* player);
+	void setPlayer(Player *player);
 
 protected:
 	virtual void keyPressEvent(QKeyEvent *e);
+	virtual void showEvent(QShowEvent *);
 
 private:
 	Settings *settings;
 	Player *player;
-	void highlightLine();
-	bool extractFrame(qint32 &frame);
+	QMap<qint32, int> startFrames;
+	void highlightLine(int line = -1);
+	bool extractFrame(qint32 &frame, const QString &str);
 	bool currentFrame(qint32 &frame);
 	void replace(const QString &pattern, const QString &str, int n);
+	void gotoLine(qint32 frame);
 
 	QString subFilename;
 
