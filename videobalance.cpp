@@ -21,7 +21,7 @@ double VideoBalance::hue() const
 double VideoBalance::saturation() const
 {
 	QByteArray value = balance->property("saturation").toByteArray().replace(",", ".");
-	return value.toDouble();
+	return value.toDouble() - 1.0;
 }
 
 double VideoBalance::brightness() const
@@ -33,31 +33,27 @@ double VideoBalance::brightness() const
 double VideoBalance::contrast() const
 {
 	QByteArray value = balance->property("contrast").toByteArray().replace(",", ".");
-	return value.toDouble();
+	return value.toDouble() - 1.0;
 }
 
 void VideoBalance::setHue(double value)
 {
-	if (value >= -1.0 && value <= 1.0)
-		balance->setProperty("hue", value);
+	balance->setProperty("hue", value);
 }
 
 void VideoBalance::setSaturation(double value)
 {
-	if (value >= -1.0 && value <= 1.0)
-		balance->setProperty("saturation", value + 1.0);
+	balance->setProperty("saturation", value + 1.0);
 }
 
 void VideoBalance::setBrightness(double value)
 {
-	if (value >= -1.0 && value <= 1.0)
-		balance->setProperty("brightness", value);
+	balance->setProperty("brightness", value);
 }
 
 void VideoBalance::setContrast(double value)
 {
-	if (value >= -1.0 && value <= 1.0)
-		balance->setProperty("contrast", value + 1.0);
+	balance->setProperty("contrast", value + 1.0);
 }
 
 void VideoBalance::init()

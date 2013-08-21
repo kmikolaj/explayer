@@ -82,14 +82,14 @@ void Settings::setDefault()
 	KeysPlayer.NextFrame = QKeySequence(Qt::Key_Period);
 	KeysPlayer.PrevFrame = QKeySequence(Qt::Key_Comma);
 	KeysPlayer.Time =  QKeySequence(Qt::Key_O);
-	KeysPlayer.ContrastUp = QKeySequence(Qt::Key_1);
-	KeysPlayer.ContrastDown = QKeySequence(Qt::Key_2);
+	KeysPlayer.ContrastDown = QKeySequence(Qt::Key_1);
+	KeysPlayer.ContrastUp = QKeySequence(Qt::Key_2);
 	KeysPlayer.BrightnessDown = QKeySequence(Qt::Key_3);
 	KeysPlayer.BrightnessUp = QKeySequence(Qt::Key_4);
-	KeysPlayer.SaturationUp = QKeySequence(Qt::Key_5);
-	KeysPlayer.SaturationDown = QKeySequence(Qt::Key_6);
-	KeysPlayer.HueUp = QKeySequence(Qt::Key_7);
-	KeysPlayer.HueDown = QKeySequence(Qt::Key_8);
+	KeysPlayer.SaturationDown = QKeySequence(Qt::Key_5);
+	KeysPlayer.SaturationUp = QKeySequence(Qt::Key_6);
+	KeysPlayer.HueDown = QKeySequence(Qt::Key_7);
+	KeysPlayer.HueUp = QKeySequence(Qt::Key_8);
 	KeysPlayer.FrameJump = QKeySequence(Qt::ControlModifier | Qt::Key_G);
 	KeysPlayer.TimeJump = QKeySequence(Qt::ControlModifier | Qt::Key_T);
 

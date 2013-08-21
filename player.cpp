@@ -7,13 +7,10 @@
 #include <QGst/Bus>
 #include <QGst/Message>
 #include <QGst/Query>
-#include <QGst/ClockTime>
 #include <QGst/Event>
 #include <QGst/StreamVolume>
 #include <QGst/ColorBalance>
 #include <QGst/Caps>
-
-double GstTime::framerate = 0.0;
 
 Player::Player(QWidget *parent)
 	: QGst::Ui::VideoWidget(parent)
@@ -23,6 +20,7 @@ Player::Player(QWidget *parent)
 	subtitles = settings->Video.Subtitles;
 	aspectratio = settings->Video.ForceAspectRatio;
 	setHardwareAcceleration(settings->Video.VAAPI);
+	dpms.Disable();
 }
 
 Player::~Player()
@@ -32,17 +30,12 @@ Player::~Player()
 		pipeline->setState(QGst::StateNull);
 		stopPipelineWatch();
 	}
+	dpms.Restore();
 }
 
 void Player::setUri(const QString &uri)
 {
-	QString realUri = uri;
-
-	//if uri is not a real uri, assume it is a file path
-	if (realUri.indexOf("://") < 0)
-	{
-		realUri = QUrl::fromLocalFile(realUri).toString();
-	}
+	QString realUri = (uri.indexOf("://") < 0 ? QUrl::fromLocalFile(uri).toString() : uri);
 
 	if (!pipeline)
 	{
@@ -81,13 +74,7 @@ void Player::setUri(const QString &uri)
 
 void Player::setSubtitles(const QString &sub, const QString &font, const QString &enc)
 {
-	QString realUri = sub;
-
-	//if uri is not a real uri, assume it is a file path
-	if (realUri.indexOf("://") < 0)
-	{
-		realUri = QUrl::fromLocalFile(realUri).toString();
-	}
+	QString realUri = (sub.indexOf("://") < 0 ? QUrl::fromLocalFile(sub).toString() : sub);
 
 	if (pipeline)
 	{
@@ -156,13 +143,13 @@ void Player::setPosition(const GstTime &pos, SeekFlag flag)
 		if (flag & Skip)
 			flags |= QGst::SeekFlagSkip;
 
-		QGst::SeekEventPtr evt = QGst::SeekEvent::create(
-		                             1.0, QGst::FormatTime, flags,
-		                             QGst::SeekTypeSet, QGst::ClockTime::fromTime(pos.Time),
-		                             QGst::SeekTypeNone, QGst::ClockTime::None
-		                         );
+		QGst::SeekEventPtr evt = QGst::SeekEvent::create(1.0, QGst::FormatTime,
+		                         flags, QGst::SeekTypeSet,
+		                         QGst::ClockTime::fromTime(pos.Time),
+		                         QGst::SeekTypeNone, QGst::ClockTime::None);
 
 		pipeline->sendEvent(evt);
+
 	}
 }
 
@@ -226,7 +213,10 @@ void Player::setVolume(double volume)
 
 		if (svp)
 		{
-			svp->setVolume(volume, QGst::StreamVolumeFormatCubic);
+			double newVol = QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear,
+			                                            QGst::StreamVolumeFormatCubic, volume);
+			svp->setVolume(newVol, QGst::StreamVolumeFormatCubic);
+			osd->setText("Vol: " + QString::number(int(volume * 100)));
 		}
 	}
 }
@@ -236,6 +226,7 @@ void Player::setHue(double hue)
 	if (pipeline && balance && settings->Gui.Color)
 	{
 		balance->setHue(hue);
+		osd->setText("Hue: " + QString::number(int(hue * 100)));
 	}
 }
 
@@ -244,6 +235,7 @@ void Player::setSaturation(double saturation)
 	if (pipeline && balance && settings->Gui.Color)
 	{
 		balance->setSaturation(saturation);
+		osd->setText("Saturation: " + QString::number(int(saturation * 100)));
 	}
 }
 
@@ -252,6 +244,7 @@ void Player::setBrightness(double brightness)
 	if (pipeline && balance && settings->Gui.Color)
 	{
 		balance->setBrightness(brightness);
+		osd->setText("Brightness: " + QString::number(int(brightness * 100)));
 	}
 }
 
@@ -260,6 +253,7 @@ void Player::setContrast(double contrast)
 	if (pipeline && balance && settings->Gui.Color)
 	{
 		balance->setContrast(contrast);
+		osd->setText("Contrast: " + QString::number(int(contrast * 100)));
 	}
 }
 
@@ -442,92 +436,4 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 	}
 
 	emit stateChanged();
-}
-
-
-MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
-{
-	if (info->videoStreams().size() > 0)
-	{
-		videoInfo = info->videoStreams()[0].dynamicCast<QGst::DiscovererVideoInfo>();
-		tags = info->tags();
-		framerate = double(videoInfo->framerate().numerator) /
-		            double(videoInfo->framerate().denominator);
-		GstTime::setFps(framerate);
-		duration = QGst::ClockTime(info->duration()).toTime();
-		frames = duration.Frame;
-		filename = info->uri().toLocalFile();
-		QFile file(filename);
-		size = file.size();
-		valid = true;
-	}
-	else
-	{
-		init();
-	}
-}
-
-MetaData::MetaData()
-{
-	init();
-}
-
-void MetaData::init()
-{
-	valid = false;
-	framerate = 0.0;
-	duration = GstTime();
-	size = 0;
-	filename = "";
-}
-
-GstTime::GstTime()
-{
-	Time = QTime(0, 0);
-	Nsec = Frame = Msec = 0;
-}
-
-GstTime::GstTime(const QTime &time)
-{
-	Time = time;
-	Msec = time.hour() * 3600000 + time.minute() * 60000 + time.second() * 1000 + time.msec();
-	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
-	Nsec = Msec * 1000;
-}
-
-GstTime::GstTime(const qint32 frame)
-{
-	Frame = frame;
-	Msec = qint64((frame / GstTime::framerate) * 1000.0);
-	Time = QTime(0, 0).addMSecs(Msec);
-	Nsec = Msec * 1000;
-}
-
-GstTime::GstTime(const qint64 msec)
-{
-	Msec = msec;
-	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
-	Time = QTime(0, 0).addMSecs(Msec);
-	Nsec = Msec * 1000;
-}
-
-void GstTime::setFps(double fps)
-{
-	GstTime::framerate = fps;
-}
-
-void GstTime::moveMsec(qint64 msec)
-{
-	Msec += msec;
-	Time = Time.addMSecs(msec);
-	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
-	Nsec += Msec * 1000;
-}
-
-void GstTime::moveFrame(qint32 frame)
-{
-	Frame += frame;
-	Msec = qint64((frame / GstTime::framerate) * 1000.0);
-	Time = QTime(0, 0).addMSecs(Msec);
-	Nsec = Msec * 1000;
 }

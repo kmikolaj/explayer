@@ -65,6 +65,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	// jumper dialog
 	jumper = new JumpDialog(this);
 
+	// opener dialog
 	// opener = new OpenDialog(this);
 
 	// on start
@@ -91,15 +92,15 @@ void MainWindow::openFile()
 	}
 }
 
-void MainWindow::playFile(const QString &filename)
+void MainWindow::playFile(const QString &local)
 {
-	QString subfilename = filename.left(filename.lastIndexOf('.')) + ".txt";
-	QFile film(filename);
+	QString subfilename = local.left(local.lastIndexOf('.')) + ".txt";
+	QFile film(local);
 	QFile subtitles(subfilename);
 	if (film.exists())
 	{
 		ui->video->stop();
-		ui->video->setUri(filename);
+		ui->video->setUri(local);
 		if (subtitles.exists())
 		{
 			ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
@@ -109,18 +110,21 @@ void MainWindow::playFile(const QString &filename)
 	}
 }
 
-void MainWindow::startPlaying(const QString &url)
+void MainWindow::playUrl(const QString &remote)
 {
-	// detekcja czy lokalny
-	this->url = url;
-	QTimer::singleShot(50, this, SLOT(play()));
+	QUrl url(remote);
+	if (url.isValid())
+	{
+		ui->video->stop();
+		ui->video->setUri(url.toString());
+		ui->video->play();
+	}
 }
 
-void MainWindow::playUrl(const QUrl &url)
+void MainWindow::startPlaying(const QString &url)
 {
-	ui->video->stop();
-	ui->video->setUri(url.toString());
-	ui->video->play();
+	this->url = url;
+	QTimer::singleShot(50, this, SLOT(play()));
 }
 
 void MainWindow::addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot)
@@ -128,7 +132,9 @@ void MainWindow::addHotkey(const QKeySequence &key, QMap<const char *, const QOb
 	QShortcut *shortcut = new QShortcut(key, this);
 	hotkeys.push_back(shortcut);
 	foreach(const char * i, slot.keys())
-	connect(shortcut, SIGNAL(activated()), slot[i], i);
+	{
+		connect(shortcut, SIGNAL(activated()), slot[i], i);
+	}
 }
 
 void MainWindow::addHotkey(const QKeySequence &key, const QObject *obj, const char *slot)
@@ -238,12 +244,23 @@ void MainWindow::open()
 
 void MainWindow::play()
 {
-	playFile(url);
+	play(url);
 }
 
-void MainWindow::play(QString)
+void MainWindow::play(QString video)
 {
-	//
+	QUrl url(video);
+	if (url.isValid())
+	{
+		if (video.indexOf("://") < 0)
+		{
+			playFile(video);
+		}
+		else
+		{
+			playUrl(video);
+		}
+	}
 }
 
 void MainWindow::toggleeditor()
@@ -337,7 +354,7 @@ void MainWindow::volumeUp()
 	{
 		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
 		double newVol = linear + MIN(1.0 - linear, 0.05);
-		ui->video->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, newVol));
+		ui->video->setVolume(newVol);
 		ui->controls->setVolume(newVol * 100);
 	}
 }
@@ -349,49 +366,65 @@ void MainWindow::volumeDown()
 	{
 		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
 		double newVol = linear - MIN(linear, 0.05);
-		ui->video->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, newVol));
+		ui->video->setVolume(newVol);
 		ui->controls->setVolume(newVol * 100);
 	}
 }
 
 void MainWindow::hueUp()
 {
-	ui->video->setHue(ui->video->hue() + 0.1);
+	double value = ui->video->hue() + 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setHue(value);
 }
 
 void MainWindow::hueDown()
 {
-	ui->video->setHue(ui->video->hue() - 0.1);
+	double value = ui->video->hue() - 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setHue(value);
 }
 
 void MainWindow::saturationUp()
 {
-	ui->video->setSaturation(ui->video->saturation() + 0.1);
+	double value = ui->video->saturation() + 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setSaturation(value);
 }
 
 void MainWindow::saturationDown()
 {
-	ui->video->setSaturation(ui->video->saturation() - 0.1);
+	double value = ui->video->saturation() - 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setSaturation(value);
 }
 
 void MainWindow::brightnessUp()
 {
-	ui->video->setBrightness(ui->video->brightness() + 0.1);
+	double value = ui->video->brightness() + 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setBrightness(value);
 }
 
 void MainWindow::brightnessDown()
 {
-	ui->video->setBrightness(ui->video->brightness() - 0.1);
+	double value = ui->video->brightness() - 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setBrightness(value);
 }
 
 void MainWindow::contrastUp()
 {
-	ui->video->setContrast(ui->video->contrast() + 0.1);
+	double value = ui->video->contrast() + 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setContrast(value);
 }
 
 void MainWindow::contrastDown()
 {
-	ui->video->setContrast(ui->video->contrast() - 0.1);
+	double value = ui->video->contrast() - 0.1;
+	if (value >= -1.0 && value <= 1.0)
+		ui->video->setContrast(value);
 }
 
 void MainWindow::frameJump()

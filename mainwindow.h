@@ -24,9 +24,9 @@ public:
 	~MainWindow();
 
 	void openFile();
-	void playFile(const QString &filename);
+	void playFile(const QString &local);
+	void playUrl(const QString &remote);
 	void startPlaying(const QString &url);
-	void playUrl(const QUrl &url);
 	void addHotkey(const QKeySequence &key, const QObject *obj, const char *slot);
 	void addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot);
 
@@ -53,7 +53,7 @@ public slots:
 	void fullScreen();
 	void seekForward();
 	void seekBackward();
-	void seekFrame(qint32 frame);
+	void seekFrame(qint32);
 	void nextFrame();
 	void prevFrame();
 	void volumeUp();

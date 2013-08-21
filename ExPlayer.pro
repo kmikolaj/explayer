@@ -4,10 +4,10 @@
 #
 #-------------------------------------------------
 
-QT 		+= core gui widgets
+QT 		+= core gui widgets x11extras
 
 CONFIG += silent link_pkgconfig
-PKGCONFIG += Qt5GStreamer-0.10 Qt5GStreamerUi-0.10
+PKGCONFIG += Qt5GStreamer-0.10 Qt5GStreamerUi-0.10 xcb-dpms
 
 QMAKE_CXXFLAGS += -std=c++0x
 
@@ -25,7 +25,8 @@ SOURCES += main.cpp\
     utils.cpp \
     videobalance.cpp \
     videofilter.cpp \
-    jumpdialog.cpp
+    jumpdialog.cpp \
+    metadata.cpp
 
 HEADERS  += mainwindow.h \
     player.h \
@@ -37,7 +38,8 @@ HEADERS  += mainwindow.h \
     utils.h \
     videobalance.h \
     videofilter.h \
-    jumpdialog.h
+    jumpdialog.h \
+    metadata.h
 
 FORMS    += mainwindow.ui \
     controls.ui \
