@@ -9,7 +9,7 @@
 #include "videobalance.h"
 #include "metadata.h"
 
-enum SeekFlag
+enum SeekFlag // zmien na QFlag
 {
     None,
     Accurate,
@@ -49,6 +49,7 @@ public:
 
 public slots:
 	void play();
+	void play(QTime);
 	void pause();
 	void toggle();
 	void stop();
@@ -73,6 +74,12 @@ private:
 	void setHardwareAcceleration(bool enable);
 	void disableDPMS();
 	void enableDPMS();
+
+	struct
+	{
+		GstTime Time;
+		bool Changed;
+	} startingPosition;
 
 	QGst::PipelinePtr pipeline;
 	QString videouri;

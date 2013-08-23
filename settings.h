@@ -88,6 +88,9 @@ public:
 		QKeySequence ReplaceEndFrame;
 	} KeysEditor;
 
+	void updatePosition(const QString &file, const QTime &time=QTime(0,0));
+	QTime getPosition(const QString &file);
+
 private:
 	Settings(QObject *parent = 0);
 	~Settings();

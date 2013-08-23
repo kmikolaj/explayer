@@ -24,11 +24,14 @@ public:
 	~MainWindow();
 
 	void openFile();
-	void playFile(const QString &local);
-	void playUrl(const QString &remote);
+	void playFile(const QString &url);
+	void playUrl(const QString &url);
 	void startPlaying(const QString &url);
 	void addHotkey(const QKeySequence &key, const QObject *obj, const char *slot);
 	void addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot);
+
+protected:
+	void changeEvent(QEvent* e);
 
 private:
 	Ui::MainWindow *ui;

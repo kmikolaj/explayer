@@ -27,6 +27,10 @@ Player::~Player()
 {
 	if (pipeline)
 	{
+		if (state() != QGst::StateNull)
+			settings->updatePosition(videouri, position().Time);
+		else
+			settings->updatePosition(videouri);
 		pipeline->setState(QGst::StateNull);
 		stopPipelineWatch();
 	}
@@ -35,7 +39,8 @@ Player::~Player()
 
 void Player::setUri(const QString &uri)
 {
-	QString realUri = (uri.indexOf("://") < 0 ? QUrl::fromLocalFile(uri).toString() : uri);
+//	QString realUri = (uri.indexOf("://") < 0 ? QUrl::fromLocalFile(uri).toString() : uri);
+	QString realUri = uri;
 
 	if (!pipeline)
 	{
@@ -68,17 +73,19 @@ void Player::setUri(const QString &uri)
 		videouri = realUri;
 		pipeline->setProperty("uri", videouri);
 		extractMetaData();
+		qDebug() << "POS TRUE";
 		this->setAttribute(Qt::WA_PaintOnScreen, true);
 	}
 }
 
 void Player::setSubtitles(const QString &sub, const QString &font, const QString &enc)
 {
-	QString realUri = (sub.indexOf("://") < 0 ? QUrl::fromLocalFile(sub).toString() : sub);
+//	QString realUri = (sub.indexOf("://") < 0 ? QUrl::fromLocalFile(sub).toString() : sub);
 
 	if (pipeline)
 	{
-		suburi = realUri;
+//		suburi = realUri;
+		suburi = sub;
 		if (subtitles)
 		{
 			pipeline->setProperty("suburi", suburi);
@@ -216,7 +223,7 @@ void Player::setVolume(double volume)
 			double newVol = QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear,
 			                                            QGst::StreamVolumeFormatCubic, volume);
 			svp->setVolume(newVol, QGst::StreamVolumeFormatCubic);
-			osd->setText("Vol: " + QString::number(int(volume * 100)));
+			osd->setText("Volume: " + QString::number(int(volume * 100)));
 		}
 	}
 }
@@ -347,6 +354,17 @@ void Player::play()
 	}
 }
 
+void Player::play(QTime position)
+{
+	if (pipeline)
+	{
+		pipeline->setState(QGst::StatePlaying);
+		startingPosition.Time = position;
+		startingPosition.Changed = false;
+		osd->setText("▶");
+	}
+}
+
 void Player::pause()
 {
 	if (pipeline)
@@ -377,6 +395,7 @@ void Player::stop()
 	if (pipeline)
 	{
 		pipeline->setState(QGst::StateNull);
+		qDebug() << "POS FALSE";
 		this->setAttribute(Qt::WA_PaintOnScreen, false);
 		emit stateChanged();
 	}
@@ -418,6 +437,12 @@ void Player::handlePipelineStateChange(const QGst::StateChangedMessagePtr &scm)
 		{
 			positionTimer.stop();
 		}
+		else if (scm->oldState() == QGst::StateReady && !startingPosition.Changed)
+		{
+			setPosition(startingPosition.Time);
+			startingPosition.Changed = true;
+		}
+
 		break;
 	case QGst::StateReady:
 	{

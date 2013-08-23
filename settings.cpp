@@ -18,14 +18,31 @@ QString Settings::GetVersionInfo()
 	return info.sprintf("Version: %d.%d.%d (Codename: %s)", _MAJOR_, _MINOR_, _REVISION_, _CODENAME_);
 }
 
+void Settings::updatePosition(const QString &file, const QTime &time)
+{
+	if (Gui.LastPosition.contains(file) && time == QTime(0,0))
+		Gui.LastPosition.remove(file);
+	Gui.LastPosition[file] = time;
+}
+
+QTime Settings::getPosition(const QString &file)
+{
+	if (Gui.LastPosition.contains(file))
+		return Gui.LastPosition[file];
+	return QTime(0,0);
+}
+
 Settings::Settings(QObject *parent) : QObject(parent)
 {
 	setDefault();
-	readLastPositions();
+	if (Gui.RememberPosition)
+		readLastPositions();
 }
 
 Settings::~Settings()
 {
+	if (Gui.RememberPosition)
+		saveLastPositions();
 }
 
 void Settings::setDefault()

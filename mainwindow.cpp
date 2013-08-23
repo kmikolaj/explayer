@@ -92,31 +92,36 @@ void MainWindow::openFile()
 	}
 }
 
-void MainWindow::playFile(const QString &local)
+void MainWindow::playFile(const QString &url)
 {
+	QString local = QUrl(url).toLocalFile();
 	QString subfilename = local.left(local.lastIndexOf('.')) + ".txt";
 	QFile film(local);
 	QFile subtitles(subfilename);
 	if (film.exists())
 	{
 		ui->video->stop();
-		ui->video->setUri(local);
+		ui->video->setUri(url);
 		if (subtitles.exists())
 		{
 			ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
 			ui->editor->loadSubtitles(subfilename);
 		}
-		ui->video->play();
+
+		if (settings->Gui.RememberPosition)
+			ui->video->play(settings->getPosition(url));
+		else
+			ui->video->play();
 	}
 }
 
-void MainWindow::playUrl(const QString &remote)
+void MainWindow::playUrl(const QString &url)
 {
-	QUrl url(remote);
-	if (url.isValid())
+	QUrl uri(url);
+	if (uri.isValid())
 	{
 		ui->video->stop();
-		ui->video->setUri(url.toString());
+		ui->video->setUri(uri.toString());
 		ui->video->play();
 	}
 }
@@ -142,6 +147,16 @@ void MainWindow::addHotkey(const QKeySequence &key, const QObject *obj, const ch
 	QShortcut *shortcut = new QShortcut(key, this);
 	hotkeys.push_back(shortcut);
 	connect(shortcut, SIGNAL(activated()), obj, slot);
+}
+
+void MainWindow::changeEvent(QEvent *e)
+{
+	if (e->type() == QEvent::WindowStateChange)
+	{
+		qDebug() << (windowState() & Qt::WindowFullScreen);
+		// if full screen do sth
+    }
+	QMainWindow::changeEvent(e);
 }
 
 void MainWindow::seek(int seconds)
@@ -202,7 +217,7 @@ void MainWindow::positionUpdate()
 	GstTime pos, len;
 
 	if (ui->video->state() != QGst::StateReady &&
-	    ui->video->state() != QGst::StateNull)
+	        ui->video->state() != QGst::StateNull)
 	{
 		pos = ui->video->position();
 		len = ui->video->length();
@@ -254,7 +269,7 @@ void MainWindow::play(QString video)
 	{
 		if (video.indexOf("://") < 0)
 		{
-			playFile(video);
+			playFile(QUrl::fromLocalFile(video).toString());
 		}
 		else
 		{
@@ -305,7 +320,7 @@ void MainWindow::fullScreen()
 void MainWindow::seekForward()
 {
 	if (ui->video->state() != QGst::StateReady &&
-	    ui->video->state() != QGst::StateNull)
+	        ui->video->state() != QGst::StateNull)
 	{
 		seek(settings->Video.SeekShort);
 	}
@@ -314,7 +329,7 @@ void MainWindow::seekForward()
 void MainWindow::seekBackward()
 {
 	if (ui->video->state() != QGst::StateReady &&
-	    ui->video->state() != QGst::StateNull)
+	        ui->video->state() != QGst::StateNull)
 	{
 		seek(-1 * settings->Video.SeekShort);
 	}
@@ -323,7 +338,7 @@ void MainWindow::seekBackward()
 void MainWindow::seekFrame(qint32 frame)
 {
 	if (ui->video->state() != QGst::StateReady &&
-	    ui->video->state() != QGst::StateNull)
+	        ui->video->state() != QGst::StateNull)
 	{
 		gotoFrame(frame, false);
 	}
@@ -332,7 +347,7 @@ void MainWindow::seekFrame(qint32 frame)
 void MainWindow::nextFrame()
 {
 	if (ui->video->state() != QGst::StateReady &&
-	    ui->video->state() != QGst::StateNull)
+	        ui->video->state() != QGst::StateNull)
 	{
 		gotoFrame(ui->video->position().Frame + 1, true);
 	}
@@ -341,7 +356,7 @@ void MainWindow::nextFrame()
 void MainWindow::prevFrame()
 {
 	if (ui->video->state() != QGst::StateReady &&
-	    ui->video->state() != QGst::StateNull)
+	        ui->video->state() != QGst::StateNull)
 	{
 		gotoFrame(ui->video->position().Frame - 1, true);
 	}
@@ -373,58 +388,50 @@ void MainWindow::volumeDown()
 
 void MainWindow::hueUp()
 {
-	double value = ui->video->hue() + 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setHue(value);
+	double value = MIN(MAX(-1.0, ui->video->hue() + 0.1), 1.0);
+	ui->video->setHue(value);
 }
 
 void MainWindow::hueDown()
 {
-	double value = ui->video->hue() - 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setHue(value);
+	double value = MIN(MAX(-1.0, ui->video->hue() - 0.1), 1.0);
+	ui->video->setHue(value);
 }
 
 void MainWindow::saturationUp()
 {
-	double value = ui->video->saturation() + 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setSaturation(value);
+	double value = MIN(MAX(-1.0, ui->video->saturation() + 0.1), 1.0);
+	ui->video->setSaturation(value);
 }
 
 void MainWindow::saturationDown()
 {
-	double value = ui->video->saturation() - 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setSaturation(value);
+	double value = MIN(MAX(-1.0, ui->video->saturation() - 0.1), 1.0);
+	ui->video->setSaturation(value);
 }
 
 void MainWindow::brightnessUp()
 {
-	double value = ui->video->brightness() + 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setBrightness(value);
+	double value = MIN(MAX(-1.0, ui->video->brightness() + 0.1), 1.0);
+	ui->video->setBrightness(value);
 }
 
 void MainWindow::brightnessDown()
 {
-	double value = ui->video->brightness() - 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setBrightness(value);
+	double value = MIN(MAX(-1.0, ui->video->brightness() - 0.1), 1.0);
+	ui->video->setBrightness(value);
 }
 
 void MainWindow::contrastUp()
 {
-	double value = ui->video->contrast() + 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setContrast(value);
+	double value = MIN(MAX(-1.0, ui->video->contrast() + 0.1), 1.0);
+	ui->video->setContrast(value);
 }
 
 void MainWindow::contrastDown()
 {
-	double value = ui->video->contrast() - 0.1;
-	if (value >= -1.0 && value <= 1.0)
-		ui->video->setContrast(value);
+	double value = MIN(MAX(-1.0, ui->video->contrast() - 0.1), 1.0);
+	ui->video->setContrast(value);
 }
 
 void MainWindow::frameJump()
