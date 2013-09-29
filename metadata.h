@@ -1,7 +1,8 @@
 #ifndef METADATA_H
 #define METADATA_H
 
-#include <QGst/Discoverer>
+//#include <QGst/Discoverer>
+#include <QTime>
 
 class DPMS
 {
@@ -37,7 +38,7 @@ public:
 private:
 	static double framerate;
 };
-
+/*
 class MetaData
 {
 public:
@@ -80,5 +81,5 @@ private:
 
 	void init();
 };
-
+*/
 #endif // METADATA_H

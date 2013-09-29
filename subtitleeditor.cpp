@@ -7,7 +7,7 @@
 #include <QDebug>
 
 SubtitleEditor::SubtitleEditor(QWidget *parent) :
-	QPlainTextEdit(parent), player(nullptr)
+	QPlainTextEdit(parent)//, player(nullptr)
 {
 	setViewportMargins(-4, -5, -4, -5);
 	connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(on_cursorPositionChanged()));
@@ -29,12 +29,12 @@ void SubtitleEditor::saveSubtitles(const QString &filename)
 		stream << toPlainText();
 	}
 }
-
+/*
 void SubtitleEditor::setPlayer(Player *player)
 {
 	this->player = player;
 }
-
+*/
 void SubtitleEditor::loadSubtitles(const QString &filename)
 {
 	QFile file(filename);
@@ -136,11 +136,11 @@ bool SubtitleEditor::currentFrame(qint32 &frame)
 {
 	bool ok = false;
 	frame = 0;
-	if (player)
-	{
-		frame = player->position().Frame;
-		ok = true;
-	}
+//	if (player)
+//	{
+//		frame = player->position().Frame;
+//		ok = true;
+//	}
 	return ok;
 }
 

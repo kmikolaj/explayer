@@ -1,6 +1,5 @@
 #include "controls.h"
 #include "ui_controls.h"
-#include <QGst/StreamVolume>
 
 Controls::Controls(QWidget *parent) :
 	QWidget(parent),
@@ -152,6 +151,6 @@ void Controls::on_openButton_clicked()
 
 void Controls::on_volumeSlider_sliderMoved(int position)
 {
-	double newPos = QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, position / 100.0);
-	emit volumeChanged(newPos);
+//	double newPos = QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, position / 100.0);
+//	emit volumeChanged(newPos);
 }

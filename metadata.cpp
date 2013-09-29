@@ -4,7 +4,7 @@
 #include <xcb/dpms.h>
 
 double GstTime::framerate = 0.0;
-
+/*
 MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
 {
 	if (info->videoStreams().size() > 0)
@@ -40,7 +40,7 @@ void MetaData::init()
 	size = 0;
 	filename = "";
 }
-
+*/
 GstTime::GstTime()
 {
 	Time = QTime(0, 0);

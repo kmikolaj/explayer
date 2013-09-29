@@ -49,7 +49,7 @@ void Settings::setDefault()
 {
 	// video
 	Video.Output = "xv";
-	Video.VAAPI = false;
+	Video.VAAPI = true;
 	Video.ForceAspectRatio = true;
 	Video.PixelAspectRatio = 1.0;
 	Video.Subtitles = true;

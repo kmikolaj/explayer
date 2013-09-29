@@ -5,7 +5,8 @@
 #include <QWidget>
 #include <QShortcut>
 #include <QUrl>
-#include "player.h"
+//#include "player.h"
+#include "metadata.h"
 #include "controls.h"
 #include "settings.h"
 #include "jumpdialog.h"

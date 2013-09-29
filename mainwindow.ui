@@ -34,7 +34,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="Player" name="video" native="true">
+     <widget class="QWidget" name="video" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -72,12 +72,6 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
-  <customwidget>
-   <class>Player</class>
-   <extends>QWidget</extends>
-   <header>player.h</header>
-   <container>1</container>
-  </customwidget>
   <customwidget>
    <class>Controls</class>
    <extends>QWidget</extends>
