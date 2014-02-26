@@ -3,7 +3,7 @@
 #include <QX11Info>
 #include <xcb/dpms.h>
 
-double GstTime::framerate = 0.0;
+double UTime::framerate = 0.0;
 /*
 MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
 {
@@ -41,53 +41,53 @@ void MetaData::init()
 	filename = "";
 }
 */
-GstTime::GstTime()
+UTime::UTime()
 {
 	Time = QTime(0, 0);
 	Nsec = Frame = Msec = 0;
 }
 
-GstTime::GstTime(const QTime &time)
+UTime::UTime(const QTime &time)
 {
 	Time = time;
 	Msec = time.hour() * 3600000 + time.minute() * 60000 + time.second() * 1000 + time.msec();
-	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
+	Frame = qint32(Msec * UTime::framerate / 1000.0 + 0.5);
 	Nsec = Msec * 1000;
 }
 
-GstTime::GstTime(const qint32 frame)
+UTime::UTime(const qint32 frame)
 {
 	Frame = frame;
-	Msec = qint64((frame / GstTime::framerate) * 1000.0);
+	Msec = qint64((frame / UTime::framerate) * 1000.0);
 	Time = QTime(0, 0).addMSecs(Msec);
 	Nsec = Msec * 1000;
 }
 
-GstTime::GstTime(const qint64 msec)
+UTime::UTime(const qint64 msec)
 {
 	Msec = msec;
-	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
+	Frame = qint32(Msec * UTime::framerate / 1000.0 + 0.5);
 	Time = QTime(0, 0).addMSecs(Msec);
 	Nsec = Msec * 1000;
 }
 
-void GstTime::setFps(double fps)
+void UTime::setFps(double fps)
 {
-	GstTime::framerate = fps;
+	UTime::framerate = fps;
 }
 
-void GstTime::moveMsec(qint64 msec)
+void UTime::moveMsec(qint64 msec)
 {
 	Msec += msec;
 	Time = Time.addMSecs(msec);
-	Frame = qint32(Msec * GstTime::framerate / 1000.0 + 0.5);
+	Frame = qint32(Msec * UTime::framerate / 1000.0 + 0.5);
 	Nsec += Msec * 1000;
 }
 
-void GstTime::moveFrame(qint32 frame)
+void UTime::moveFrame(qint32 frame)
 {
 	Frame += frame;
-	Msec = qint64((frame / GstTime::framerate) * 1000.0);
+	Msec = qint64((frame / UTime::framerate) * 1000.0);
 	Time = QTime(0, 0).addMSecs(Msec);
 	Nsec = Msec * 1000;
 }

@@ -1,13 +1,12 @@
 #include "osd.h"
-#include <QGst/ElementFactory>
 
 Osd::Osd(QObject *parent)
 	: VideoFilter(parent)
 {
 }
 
-Osd::Osd(QGst::PipelinePtr pipe, QObject *parent)
-	: VideoFilter(pipe, parent), osdVisible(false), timeVisible(false)
+Osd::Osd(GstElement *pipeline, QObject *parent)
+	: VideoFilter(pipeline, parent), osdVisible(false), timeVisible(false)
 {
 	init();
 }
@@ -16,7 +15,7 @@ void Osd::enable()
 {
 	if (!osdVisible)
 	{
-		overlay->setProperty("silent", false);
+		g_object_set(G_OBJECT(overlay), "silent", false, NULL);
 		osdVisible = true;
 	}
 }
@@ -25,7 +24,7 @@ void Osd::disable()
 {
 	if (osdVisible)
 	{
-		overlay->setProperty("silent", true);
+		g_object_set(G_OBJECT(overlay), "silent", true, NULL);
 		osdVisible = false;
 	}
 }
@@ -34,16 +33,18 @@ void Osd::setText(const QString &text, const int time)
 {
 	if (osdVisible)
 	{
+		/*
 		timer.setInterval(time);
 		timer.stop();
 		timer.start();
-		overlay->setProperty("text", text);
+		g_object_set(G_OBJECT(overlay), "text", text.toUtf8().data(), NULL);
+		*/
 	}
 }
 
 void Osd::toggleTime()
 {
-	time->setProperty("silent", timeVisible);
+	g_object_set(G_OBJECT(time), "silent", timeVisible, NULL);
 	timeVisible = !timeVisible;
 }
 
@@ -51,39 +52,48 @@ void Osd::clear()
 {
 	if (osdVisible)
 	{
-		overlay->setProperty("text", QString());
+		g_object_set(G_OBJECT(overlay), "text", "", NULL);
 	}
 }
 
 void Osd::init()
 {
-	videosink = QGst::ElementFactory::make("xvimagesink");
-	overlay = QGst::ElementFactory::make("textoverlay");
-	time = QGst::ElementFactory::make("timeoverlay");
-	bin = QGst::Bin::create("osd");
+	g_object_get(G_OBJECT(pipeline), "video-sink", &videosink, NULL);
+	overlay = gst_element_factory_make("textoverlay", "overlay1");
+//	time = gst_element_factory_make("timeoverlay", "time1");
+	bin = gst_bin_new("osd");
 
-	bin->add(overlay);
-	bin->add(time);
-	QGst::PadPtr pad = overlay->getStaticPad("video_sink");
-	QGst::GhostPadPtr ghostpad = QGst::GhostPad::create(pad, "sink");
-	bin->addPad(ghostpad);
-	bin->add(videosink);
+	int r = gst_bin_add(GST_BIN(bin), overlay);
+//	r = gst_bin_add(GST_BIN(bin), time);
+	GstPad *pad = gst_element_get_static_pad(overlay, "video_sink");
+	r = gst_element_add_pad(bin, gst_ghost_pad_new("sink", pad));
+	gst_object_unref(GST_OBJECT(pad));
+	qDebug() << r;
+//	r = gst_bin_remove(GST_BIN(pipeline), videosink);
+	qDebug() << r;
+//	r = gst_bin_add(GST_BIN(bin), videosink);
+	qDebug() << r;
+	g_object_set(G_OBJECT(overlay), "text", "AAAAAAAAAAAA", NULL);
+//	g_object_set(G_OBJECT(overlay), "valign", "top", NULL);
+//	g_object_set(G_OBJECT(overlay), "halign", "right", NULL);
+//	g_object_set(G_OBJECT(overlay), "shaded-background", true, NULL);
+//	g_object_set(G_OBJECT(overlay), "font-desc", "Sans Bold 16", NULL);
 
-	overlay->setProperty("text", QString());
-	overlay->setProperty("valign", "top");
-	overlay->setProperty("halign", "right");
-	overlay->setProperty("shaded-background", true);
-	overlay->setProperty("font-desc", "Sans Bold 16");
+//	g_object_set(time, "halign", "left", NULL);
+//	g_object_set(G_OBJECT(time), "silent", !timeVisible, NULL);
 
-	time->setProperty("halign", "left");
-	time->setProperty("silent", !timeVisible);
+//	r = gst_element_link(overlay, time);
+//	r = gst_element_link(time, videosink);
+gst_element_link_pads(overlay, "src", videosink, "sink");
+	//r = gst_element_link_pads_filtered(overlay, NULL, videosink, NULL, NULL);
+		//r = gst_element_link(overlay, videosink);
+//		r = gst_element_link(videosink, overlay);
 
-	overlay->link(time);
-	time->link(videosink);
-	pipeline->setProperty("video-sink", bin);
+	g_object_set(G_OBJECT(pipeline), "video-sink", bin, NULL);
+
 	osdVisible = false;
 
-	elements << overlay << time;
+	elements << overlay;// << time;
 
 	timer.setSingleShot(true);
 	connect(&timer, SIGNAL(timeout()), SLOT(clear()));

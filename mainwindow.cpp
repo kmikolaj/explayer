@@ -10,16 +10,16 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->setupUi(this);
 
 	settings = Settings::GetSettings(this);
-	//ui->editor->setPlayer(ui->video);
+//	ui->editor->setPlayer(ui->video);
 
 	// Video Widget
-	//connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
-	//connect(ui->video, SIGNAL(stateChanged()), this, SLOT(stateUpdate()));
+	connect(ui->video, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
+	connect(ui->video, SIGNAL(stateChanged()), this, SLOT(stateUpdate()));
 
 	// Controls Widget
-	//connect(ui->controls, SIGNAL(play()), ui->video, SLOT(play()));
-	//connect(ui->controls, SIGNAL(pause()), ui->video, SLOT(pause()));
-	//connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
+	connect(ui->controls, SIGNAL(play()), ui->video, SLOT(play()));
+	connect(ui->controls, SIGNAL(pause()), ui->video, SLOT(pause()));
+	connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
 	connect(ui->controls, SIGNAL(open()), this, SLOT(open()));
 	connect(ui->controls, SIGNAL(nextFrame()), this, SLOT(nextFrame()));
 	connect(ui->controls, SIGNAL(prevFrame()), this, SLOT(prevFrame()));
@@ -30,12 +30,12 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->editor, SIGNAL(jump(qint32)), this, SLOT(seekFrame(qint32)));
 
 	// hotkeys
-	//addHotkey(settings->KeysPlayer.PlayPause, ui->video, SLOT(toggle()));
-	//addHotkey(settings->KeysPlayer.Stop, ui->video, SLOT(stop()));
+	addHotkey(settings->KeysPlayer.PlayPause, ui->video, SLOT(toggle()));
+	addHotkey(settings->KeysPlayer.Stop, ui->video, SLOT(stop()));
 	addHotkey(settings->KeysPlayer.FullScreen, this, SLOT(fullScreen()));
 	addHotkey(settings->KeysPlayer.Editor, this, SLOT(toggleeditor()));
-	//addHotkey(settings->KeysPlayer.Subtitles, ui->video, SLOT(togglesubtitles()));
-	//addHotkey(settings->KeysPlayer.AspectRatio, ui->video, SLOT(forceaspectratio()));
+	addHotkey(settings->KeysPlayer.Subtitles, ui->video, SLOT(togglesubtitles()));
+	addHotkey(settings->KeysPlayer.AspectRatio, ui->video, SLOT(forceaspectratio()));
 	addHotkey(settings->KeysPlayer.SeekForward, this, SLOT(seekForward()));
 	addHotkey(settings->KeysPlayer.SeekBackward, this, SLOT(seekBackward()));
 	addHotkey(settings->KeysPlayer.VolumeUp, this, SLOT(volumeUp()));
@@ -44,7 +44,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	addHotkey(settings->KeysPlayer.TimeJump, this, SLOT(timeJump()));
 	addHotkey(settings->KeysPlayer.NextFrame, this, SLOT(nextFrame()));
 	addHotkey(settings->KeysPlayer.PrevFrame, this, SLOT(prevFrame()));
-	//addHotkey(settings->KeysPlayer.Time, ui->video, SLOT(toggletime()));
+	addHotkey(settings->KeysPlayer.Time, ui->video, SLOT(toggletime()));
 	addHotkey(settings->KeysPlayer.HueUp, this, SLOT(hueUp()));
 	addHotkey(settings->KeysPlayer.HueDown, this, SLOT(hueDown()));
 	addHotkey(settings->KeysPlayer.SaturationUp, this, SLOT(saturationUp()));
@@ -56,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	{
 		QMap<const char *, const QObject *> slot;
-		//slot.insert(SLOT(mute()), ui->video);
+		slot.insert(SLOT(mute()), ui->video);
 		slot.insert(SLOT(toggleMute()), ui->controls);
 		addHotkey(settings->KeysPlayer.Mute, slot);
 	}
@@ -99,18 +99,18 @@ void MainWindow::playFile(const QString &url)
 	QFile subtitles(subfilename);
 	if (film.exists())
 	{
-//		ui->video->stop();
-//		ui->video->setUri(url);
+		ui->video->stop();
+		ui->video->setVideo(url);
 		if (subtitles.exists())
 		{
-//			ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
+			ui->video->setSubtitles(subfilename, settings->Subtitles.Font, settings->Subtitles.Encoding);
 //			ui->editor->loadSubtitles(subfilename);
 		}
 
-//		if (settings->Gui.RememberPosition)
-//			ui->video->play(settings->getPosition(url));
-//		else
-//			ui->video->play();
+		if (settings->Gui.RememberPosition)
+			ui->video->play(settings->getPosition(url));
+		else
+			ui->video->play();
 	}
 }
 
@@ -119,16 +119,16 @@ void MainWindow::playUrl(const QString &url)
 	QUrl uri(url);
 	if (uri.isValid())
 	{
-//		ui->video->stop();
-//		ui->video->setUri(uri.toString());
-//		ui->video->play();
+		ui->video->stop();
+		ui->video->setVideo(uri.toString());
+		ui->video->play();
 	}
 }
 
 void MainWindow::startPlaying(const QString &url)
 {
 	this->url = url;
-//	QTimer::singleShot(50, this, SLOT(play()));
+	QTimer::singleShot(50, this, SLOT(play()));
 }
 
 void MainWindow::addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot)
@@ -154,7 +154,7 @@ void MainWindow::changeEvent(QEvent *e)
 	{
 		qDebug() << (windowState() & Qt::WindowFullScreen);
 		// if full screen do sth
-    }
+	}
 	QMainWindow::changeEvent(e);
 }
 
@@ -206,7 +206,7 @@ void MainWindow::gotoTime(const QTime &time, bool pause)
 	*/
 }
 
-void MainWindow::updateStatus(const GstTime &position, const GstTime &length)
+void MainWindow::updateStatus(const UTime &position, const UTime &length)
 {
 	QString message;
 
@@ -436,13 +436,15 @@ void MainWindow::saturationDown()
 void MainWindow::brightnessUp()
 {
 //	double value = MIN(MAX(-1.0, ui->video->brightness() + 0.1), 1.0);
-//	ui->video->setBrightness(value);
+	double value = 1.0;
+	ui->video->setBrightness(value);
 }
 
 void MainWindow::brightnessDown()
 {
 //	double value = MIN(MAX(-1.0, ui->video->brightness() - 0.1), 1.0);
-//	ui->video->setBrightness(value);
+	double value = 1.0;
+	ui->video->setBrightness(value);
 }
 
 void MainWindow::contrastUp()

@@ -3,15 +3,14 @@
 
 #include "videofilter.h"
 #include <QTimer>
-#include <QGst/GhostPad>
-#include <QGst/Pipeline>
+#include <gst/gst.h>
 
 class Osd : public VideoFilter
 {
 	Q_OBJECT
 public:
 	explicit Osd(QObject *parent = 0);
-	Osd(QGst::PipelinePtr, QObject *parent = 0);
+	Osd(GstElement *pipeline, QObject *parent = 0);
 
 	void enable();
 	void disable();
@@ -27,8 +26,8 @@ private:
 	void init();
 	bool osdVisible;
 	bool timeVisible;
-	QGst::ElementPtr overlay;
-	QGst::ElementPtr time;
+	GstElement* overlay;
+	GstElement* time;
 	QTimer timer;
 };
 

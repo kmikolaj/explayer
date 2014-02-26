@@ -2,29 +2,31 @@
 #define VIDEOFILTER_H
 
 #include <QObject>
-#include <QGst/GhostPad>
-#include <QGst/Pipeline>
+#include <QVector>
+#include <gst/gst.h>
+
+#include <QDebug>
 
 class VideoFilter : public QObject
 {
 	Q_OBJECT
 public:
 	explicit VideoFilter(QObject *parent = 0) : QObject(parent) {}
-	VideoFilter(QGst::PipelinePtr pipe, QObject *parent)
+	VideoFilter(GstElement *pipe, QObject *parent)
 		: QObject(parent), pipeline(pipe) {}
 
 	void link(VideoFilter *dest);
 	void unlink(VideoFilter *dest);
-	inline QVector<QGst::ElementPtr> getElements()
+	inline QVector<GstElement*> getElements()
 	{
 		return elements;
 	}
 
 protected:
-	QVector<QGst::ElementPtr> elements;
-	QGst::PipelinePtr pipeline;
-	QGst::BinPtr bin;
-	QGst::ElementPtr videosink;
+	QVector<GstElement*> elements;
+	GstElement *pipeline;
+	GstElement *bin;
+	GstElement *videosink;
 };
 
 #endif // VIDEOFILTER_H

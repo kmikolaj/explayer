@@ -1,30 +1,31 @@
 #include "videofilter.h"
 
 void VideoFilter::link(VideoFilter *dest)
-{
+{	qDebug() << "LINKIN";
+
 	if (videosink)
 	{
-		bin->remove(videosink);
-		videosink.clear();
+		gst_bin_remove(GST_BIN(bin), videosink);
+//		videosink.clear();
 	}
 	videosink = dest->videosink;
-	QVector<QGst::ElementPtr> elements = dest->getElements();
+	QVector<GstElement*> elements = dest->getElements();
 	for (int i = 0; i < elements.size(); i++)
 	{
-		dest->bin->remove(elements[i]);
-		bin->add(elements[i]);
+		gst_bin_remove(GST_BIN(dest->bin), elements[i]);
+		gst_bin_add(GST_BIN(bin), elements[i]);
 	}
 	for (int i = 0; i < elements.size(); i++)
 	{
 		if (i < elements.size() - 1)
-			elements[i]->link(elements[i + 1]);
+			gst_element_link(elements[i], elements[i + 1]);
 	}
-	dest->bin->remove(dest->videosink);
-	bin->add(dest->videosink);
-	dest->bin.clear();
+	gst_bin_remove(GST_BIN(dest->bin), dest->videosink);
+	gst_bin_add(GST_BIN(bin), dest->videosink);
+//	dest->bin.clear();
 
-	getElements().last()->link(dest->getElements().first());
-	dest->getElements().last()->link(dest->videosink);
+	gst_element_link(getElements().last(), dest->getElements().first());
+	gst_element_link(dest->getElements().last(), dest->videosink);
 }
 
 

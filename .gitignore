@@ -1,6 +1,7 @@
 .*
 !.gitignore
 ExPlayer.pro.user
+ExPlayer.pro.user.*
 cscope.out
 todo
 *.swp

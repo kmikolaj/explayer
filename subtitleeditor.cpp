@@ -183,7 +183,7 @@ void SubtitleEditor::gotoLine(qint32 frame)
 			it = startFrames.end() - 1;
 			value = it.value() + 1;
 		}
-		int line = (it.key() == frame ? value : MAX(0, value - 1));
+		int line = (it.key() == frame ? value : MAXVAL(0, value - 1));
 		highlightLine(line);
 	}
 }

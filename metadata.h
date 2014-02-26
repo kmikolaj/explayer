@@ -1,7 +1,6 @@
 #ifndef METADATA_H
 #define METADATA_H
 
-//#include <QGst/Discoverer>
 #include <QTime>
 
 class DPMS
@@ -17,13 +16,13 @@ private:
 	bool state;
 };
 
-class GstTime
+class UTime
 {
 public:
-	GstTime();
-	GstTime(const QTime &time);
-	GstTime(const qint32 frame);
-	GstTime(const qint64 msec);
+	UTime();
+	UTime(const QTime &time);
+	UTime(const qint32 frame);
+	UTime(const qint64 msec);
 	static void setFps(double fps);
 	QTime Time;
 	qint32 Frame;

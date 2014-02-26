@@ -32,7 +32,7 @@ public:
 	void addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot);
 
 protected:
-	void changeEvent(QEvent* e);
+	void changeEvent(QEvent *e);
 
 private:
 	Ui::MainWindow *ui;
@@ -45,7 +45,7 @@ private:
 	void seek(int seconds);
 	void gotoFrame(qint32 frame, bool pause = false);
 	void gotoTime(const QTime &time, bool pause = false);
-	void updateStatus(const GstTime &position, const GstTime &length);
+	void updateStatus(const UTime &position, const UTime &length);
 
 public slots:
 	void positionUpdate();

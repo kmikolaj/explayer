@@ -1,8 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#define MIN(x,y) (x < y ? x : y)
-#define MAX(x,y) (x > y ? x : y)
+#define MINVAL(x,y) (x < y ? x : y)
+#define MAXVAL(x,y) (x > y ? x : y)
 
 #include <QDebug>
 

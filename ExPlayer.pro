@@ -7,7 +7,7 @@
 QT 		+= core gui widgets x11extras
 
 CONFIG += silent link_pkgconfig
-PKGCONFIG += xcb-dpms gstreamer-1.0
+PKGCONFIG += xcb-dpms gstreamer-1.0 gstreamer-audio-1.0 gstreamer-video-1.0
 
 QMAKE_CXXFLAGS += -std=c++0x
 
@@ -24,7 +24,10 @@ SOURCES += main.cpp\
     utils.cpp \
     jumpdialog.cpp \
     gstreamer.cpp \
-    player.cpp
+    videofilter.cpp \
+    osd.cpp \
+    player.cpp \
+    balance.cpp
 
 HEADERS  += mainwindow.h \
     controls.h \
@@ -35,7 +38,10 @@ HEADERS  += mainwindow.h \
     utils.h \
     jumpdialog.h \
     gstreamer.h \
-    player.h
+    videofilter.h \
+    osd.h \
+    player.h \
+    balance.h
 
 FORMS    += mainwindow.ui \
     controls.ui \

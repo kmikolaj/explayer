@@ -20,7 +20,7 @@ QString Settings::GetVersionInfo()
 
 void Settings::updatePosition(const QString &file, const QTime &time)
 {
-	if (Gui.LastPosition.contains(file) && time == QTime(0,0))
+	if (Gui.LastPosition.contains(file) && time == QTime(0, 0))
 		Gui.LastPosition.remove(file);
 	Gui.LastPosition[file] = time;
 }
@@ -29,7 +29,7 @@ QTime Settings::getPosition(const QString &file)
 {
 	if (Gui.LastPosition.contains(file))
 		return Gui.LastPosition[file];
-	return QTime(0,0);
+	return QTime(0, 0);
 }
 
 Settings::Settings(QObject *parent) : QObject(parent)
@@ -49,7 +49,7 @@ void Settings::setDefault()
 {
 	// video
 	Video.Output = "xv";
-	Video.VAAPI = true;
+	Video.VAAPI = false;
 	Video.ForceAspectRatio = true;
 	Video.PixelAspectRatio = 1.0;
 	Video.Subtitles = true;
