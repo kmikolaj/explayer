@@ -23,7 +23,6 @@ enum ControlElement
 class Controls : public QWidget
 {
 	Q_OBJECT
-
 public:
 	explicit Controls(QWidget *parent = 0);
 	~Controls();

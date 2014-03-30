@@ -6,8 +6,14 @@
 
 QT 		+= core gui widgets x11extras
 
-CONFIG += silent link_pkgconfig
+CONFIG += silent link_pkgconfig gst-0.10
+
+gst-1.0 {
 PKGCONFIG += xcb-dpms gstreamer-1.0 gstreamer-audio-1.0 gstreamer-video-1.0
+}
+gst-0.10 {
+PKGCONFIG += xcb-dpms gstreamer-0.10 gstreamer-interfaces-0.10
+}
 
 QMAKE_CXXFLAGS += -std=c++0x
 
@@ -27,7 +33,9 @@ SOURCES += main.cpp\
     videofilter.cpp \
     osd.cpp \
     player.cpp \
-    balance.cpp
+    balance.cpp \
+    dpms.cpp \
+    utime.cpp
 
 HEADERS  += mainwindow.h \
     controls.h \
@@ -41,7 +49,9 @@ HEADERS  += mainwindow.h \
     videofilter.h \
     osd.h \
     player.h \
-    balance.h
+    balance.h \
+    dpms.h \
+    utime.h
 
 FORMS    += mainwindow.ui \
     controls.ui \

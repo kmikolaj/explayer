@@ -10,7 +10,7 @@ Balance::Balance(GstElement *pipeline, QObject *parent)
 
 	if (controls)
 	{
-		for (item = controls, index = 0; item != NULL; item = item->next, ++index)
+		for (item = controls, index = 0; item != nullptr; item = item->next, ++index)
 		{
 			channel = (GstColorBalanceChannel *)item->data;
 			channels[QString(channel->label).toLower()] = channel;
@@ -25,5 +25,5 @@ Balance::~Balance()
 
 GstColorBalanceChannel *Balance::Channel(const QString &name)
 {
-	return (channels.contains(name) ? channels[name] : NULL);
+	return (channels.contains(name) ? channels[name] : nullptr);
 }

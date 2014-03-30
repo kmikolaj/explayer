@@ -5,8 +5,9 @@
 #include <QWidget>
 #include <QShortcut>
 #include <QUrl>
-//#include "player.h"
+#include "player.h"
 #include "metadata.h"
+#include "utime.h"
 #include "controls.h"
 #include "settings.h"
 #include "jumpdialog.h"
@@ -19,7 +20,6 @@ class MainWindow;
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
-
 public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
@@ -32,7 +32,7 @@ public:
 	void addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot);
 
 protected:
-	void changeEvent(QEvent *e);
+	void changeEvent(QEvent *event);
 
 private:
 	Ui::MainWindow *ui;
@@ -41,6 +41,7 @@ private:
 	QVector<QShortcut *> hotkeys;
 	JumpDialog *jumper;
 	QString url;
+	PlayerInterface *player;
 
 	void seek(int seconds);
 	void gotoFrame(qint32 frame, bool pause = false);

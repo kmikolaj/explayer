@@ -1,11 +1,8 @@
 #include "metadata.h"
 #include <QFile>
-#include <QX11Info>
-#include <xcb/dpms.h>
-
-double UTime::framerate = 0.0;
 /*
-MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
+MetaData::MetaData(const GstDiscoverer *info)
+    : discoverer(info)
 {
 	if (info->videoStreams().size() > 0)
 	{
@@ -13,7 +10,7 @@ MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
 		tags = info->tags();
 		framerate = double(videoInfo->framerate().numerator) /
 		            double(videoInfo->framerate().denominator);
-		GstTime::setFps(framerate);
+		UTime::setFps(framerate);
 		duration = QGst::ClockTime(info->duration()).toTime();
 		frames = duration.Frame;
 		filename = info->uri().toLocalFile();
@@ -26,7 +23,7 @@ MetaData::MetaData(const QGst::DiscovererInfoPtr &_info) : info(_info)
 		init();
 	}
 }
-
+*/
 MetaData::MetaData()
 {
 	init();
@@ -36,102 +33,7 @@ void MetaData::init()
 {
 	valid = false;
 	framerate = 0.0;
-	duration = GstTime();
+	duration = UTime();
 	size = 0;
 	filename = "";
-}
-*/
-UTime::UTime()
-{
-	Time = QTime(0, 0);
-	Nsec = Frame = Msec = 0;
-}
-
-UTime::UTime(const QTime &time)
-{
-	Time = time;
-	Msec = time.hour() * 3600000 + time.minute() * 60000 + time.second() * 1000 + time.msec();
-	Frame = qint32(Msec * UTime::framerate / 1000.0 + 0.5);
-	Nsec = Msec * 1000;
-}
-
-UTime::UTime(const qint32 frame)
-{
-	Frame = frame;
-	Msec = qint64((frame / UTime::framerate) * 1000.0);
-	Time = QTime(0, 0).addMSecs(Msec);
-	Nsec = Msec * 1000;
-}
-
-UTime::UTime(const qint64 msec)
-{
-	Msec = msec;
-	Frame = qint32(Msec * UTime::framerate / 1000.0 + 0.5);
-	Time = QTime(0, 0).addMSecs(Msec);
-	Nsec = Msec * 1000;
-}
-
-void UTime::setFps(double fps)
-{
-	UTime::framerate = fps;
-}
-
-void UTime::moveMsec(qint64 msec)
-{
-	Msec += msec;
-	Time = Time.addMSecs(msec);
-	Frame = qint32(Msec * UTime::framerate / 1000.0 + 0.5);
-	Nsec += Msec * 1000;
-}
-
-void UTime::moveFrame(qint32 frame)
-{
-	Frame += frame;
-	Msec = qint64((frame / UTime::framerate) * 1000.0);
-	Time = QTime(0, 0).addMSecs(Msec);
-	Nsec = Msec * 1000;
-}
-
-
-DPMS::DPMS()
-{
-	Store();
-}
-
-void DPMS::Enable()
-{
-	xcb_dpms_enable(QX11Info::connection());
-}
-
-
-void DPMS::Disable()
-{
-	xcb_dpms_disable(QX11Info::connection());
-}
-
-void DPMS::Restore()
-{
-	if (state)
-		Enable();
-	else
-		Disable();
-}
-
-void DPMS::Store()
-{
-	state = State();
-}
-
-bool DPMS::State()
-{
-	u_int8_t state;
-	xcb_connection_t *conn = QX11Info::connection();
-	xcb_dpms_info_cookie_t dpmsc = xcb_dpms_info(conn);
-	xcb_dpms_info_reply_t *dpmsr;
-	if ((dpmsr = xcb_dpms_info_reply(conn, dpmsc, NULL)))
-	{
-		state = dpmsr->state;
-		free(dpmsr);
-	}
-	return bool(state);
 }

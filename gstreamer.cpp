@@ -7,27 +7,52 @@
 // temporary, options
 bool subtitles = true;
 bool aspectratio = true;
+bool hasosd = true;
+bool hasbalance = true;
 
 Gstreamer::Gstreamer(QWidget *window)
-    : QObject(window), surface(window), pipeline(NULL), xoverlay(NULL)
+    : PlayerInterface(window), surface(window), pipeline(nullptr), xoverlay(nullptr),
+      osd(nullptr), balance(nullptr)
 {
-	gst_init(NULL, NULL);
+	gst_init(nullptr, nullptr);
 	connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
 
+#if GST_VERSION_MAJOR == 1
 	pipeline = gst_element_factory_make("playbin", "player");
+#else
+	pipeline = gst_element_factory_make("playbin2", "player");
+#endif
 
 	if (pipeline)
 	{
+		osd = new Osd(pipeline, this);
+		if (hasosd)
+			osd->enable();
+
+		WId xwinid = surface->winId();
+		if (xwinid != 0)
+#if GST_VERSION_MAJOR == 1
+		    gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
+#else
+			gst_x_overlay_set_window_handle(GST_X_OVERLAY(pipeline), xwinid);
+#endif
+
 		// add bus
 		GstBus *bus;
-		bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
-		gst_bus_add_watch (bus, Gstreamer::busCallback, this);
-		gst_object_unref (bus);
+		bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline));
+		gst_bus_add_watch(bus, Gstreamer::busCallback, this);
+		gst_object_unref(bus);
 
-		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, NULL);
+		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
 
-		balance = new Balance(pipeline, this);
+		if (hasbalance)
+			balance = new Balance(pipeline, this);
 	}
+
+//	surface->setAttribute(Qt::WA_PaintOnScreen, true);
+//	surface->setAttribute(Qt::WA_NoSystemBackground, true);
+	setHardwareAcceleration(false);
+//			gst_element_set_state(pipeline, GST_STATE_READY);
 }
 
 Gstreamer::~Gstreamer()
@@ -38,7 +63,7 @@ Gstreamer::~Gstreamer()
 		gst_object_unref(pipeline);
 	}
 }
-
+// FIX
 void Gstreamer::setVideo(const QString &path)
 {
 	if (pipeline)
@@ -47,7 +72,7 @@ void Gstreamer::setVideo(const QString &path)
 		QUrl uri = makeUrl(path);
 //		surface->setAttribute(Qt::WA_PaintOnScreen, true);
 //		surface->setAttribute(Qt::WA_NoSystemBackground, true);
-		g_object_set(G_OBJECT(pipeline), "uri", uri.toEncoded().data(), NULL);
+		g_object_set(G_OBJECT(pipeline), "uri", uri.toEncoded().data(), nullptr);
 	}
 }
 
@@ -59,17 +84,30 @@ void Gstreamer::setSubtitles(const QString &path)
 		QUrl uri = makeUrl(path);
 		if (subtitles)
 		{
-			g_object_set(G_OBJECT(pipeline), "suburi", uri.toEncoded().data(), NULL);
+			g_object_set(G_OBJECT(pipeline), "suburi", uri.toEncoded().data(), nullptr);
 		}
-//		pipeline->setProperty("subtitle-encoding", enc);
-//		pipeline->setProperty("subtitle-font-desc", font);
 	}
 }
 
-bool Gstreamer::embed(QWidget *window)
+void Gstreamer::setFont(const QString &font, const QString &enc)
 {
-	// TODO
-	return true;
+	if (pipeline)
+	{
+		g_object_set(G_OBJECT(pipeline), "subtitle-encoding", qPrintable(enc), nullptr);
+		g_object_set(G_OBJECT(pipeline), "subtitle-font-desc", qPrintable(font), nullptr);
+	}
+}
+// FIX
+void Gstreamer::setPosition(const QTime &pos)
+{
+//	if (player->metadata().getTags().containerFormat() == "ASF")
+//		player->setPosition(newPos, Accurate);
+	seek(UTime(pos));
+}
+
+void Gstreamer::setPosition(const qint32 frame)
+{
+	seek(UTime(frame), SeekFlag(Accurate | Skip));
 }
 
 GstState Gstreamer::state()
@@ -77,7 +115,7 @@ GstState Gstreamer::state()
 	GstState state = GST_STATE_NULL;
 	if (pipeline)
 	{
-		gst_element_get_state(pipeline, &state, NULL, -1);
+		gst_element_get_state(pipeline, &state, nullptr, -1);
 	}
 	return state;
 }
@@ -113,18 +151,6 @@ gboolean Gstreamer::busCallback(GstBus *bus, GstMessage *msg, gpointer args)
 	}
 	case GST_MESSAGE_ELEMENT:
 	{
-		if (gst_structure_has_name(gst_message_get_structure(msg), "prepare-window-handle"))
-		{
-			WId xwinid = gst->surface->winId();
-			if (xwinid != 0)
-			{
-//				Gstreamer::Instance()->surface->setAttribute(Qt::WA_PaintOnScreen, true);
-//				Gstreamer::Instance()->surface->setAttribute(Qt::WA_NoSystemBackground, true);
-			    gst->xoverlay = GST_VIDEO_OVERLAY(GST_MESSAGE_SRC(msg));
-			    gst_video_overlay_set_window_handle(gst->xoverlay, xwinid);
-			}
-		}
-
 		break;
 	}
 	case GST_MESSAGE_EOS:
@@ -138,12 +164,11 @@ gboolean Gstreamer::busCallback(GstBus *bus, GstMessage *msg, gpointer args)
 
 	return true;
 }
-
+// FIX
 void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 {
 	GstState old_state, new_state;
-	gst_message_parse_state_changed (msg, &old_state, &new_state, NULL);
-
+	gst_message_parse_state_changed (msg, &old_state, &new_state, nullptr);
 	switch(new_state)
 	{
 	case GST_STATE_PLAYING:
@@ -161,14 +186,6 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 //			setPosition(startingPosition.Time);
 //			startingPosition.Changed = true;
 //		}
-		else if (old_state == GST_STATE_READY)
-		{
-			if (!gst->osd)
-			{
-				gst->osd = new Osd(gst->pipeline, gst);
-				gst->osd->enable();
-			}
-		}
 		break;
     case GST_STATE_READY:
 		break;
@@ -180,7 +197,7 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 	}
 
 	emit gst->stateChanged();
-	// if new == NULL releasesink()
+	// if new == nullptr releasesink()
 }
 
 void Gstreamer::setHardwareAcceleration(bool enable)
@@ -198,6 +215,18 @@ void Gstreamer::setHardwareAcceleration(bool enable)
 	}
 }
 
+bool Gstreamer::canSeek()
+{
+	GstState currentState = state();
+	return (currentState != GST_STATE_READY && currentState != GST_STATE_NULL);
+}
+/*
+void Gstreamer::paintEvent(QPaintEvent *event)
+{
+	setVideoArea(surface->rect());
+	expose();
+}
+*/
 void Gstreamer::refresh()
 {
 	surface->setAttribute(Qt::WA_PaintOnScreen, false);
@@ -215,10 +244,12 @@ void Gstreamer::play()
 	{
 		gst_element_set_state(pipeline, GST_STATE_PLAYING);
 		if (osd)
+		{
 			osd->setText("▶");
+		}
 	}
 }
-
+// FIX
 void Gstreamer::play(QTime position)
 {
 	if (pipeline)
@@ -226,7 +257,10 @@ void Gstreamer::play(QTime position)
 		gst_element_set_state(pipeline, GST_STATE_PLAYING);
 //		startingPosition.Time = position;
 //		startingPosition.Changed = false;
-//		osd->setText("▶");
+		if (osd)
+		{
+			osd->setText("▶");
+		}
 	}
 }
 
@@ -234,7 +268,10 @@ void Gstreamer::pause()
 {
 	if (pipeline)
 	{
-		//osd->clear();
+		if (osd)
+		{
+			osd->clear();
+		}
 		//osd->setText("■"); nie działa
 		gst_element_set_state(pipeline, GST_STATE_PAUSED);
 	}
@@ -264,71 +301,89 @@ void Gstreamer::stop()
 		emit stateChanged();
 	}
 }
-
+// FIX
 void Gstreamer::setVolume(double volume)
 {
+//	if (vol > 0.0)
+//	{
+//		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
+//		double newVol = linear - MIN(linear, 0.05);
+//		player->setVolume(newVol);
+//		ui->controls->setVolume(newVol * 100);
+//	}
+
+//	if (vol < 1.0)
+//	{
+//		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
+//		double newVol = linear + MIN(1.0 - linear, 0.05);
+//		player->setVolume(newVol);
+//		ui->controls->setVolume(newVol * 100);
+//	}
+
 	if (pipeline)
 	{
 		GstStreamVolume* vptr = GST_STREAM_VOLUME(pipeline);
-
 		if (vptr)
 		{
 			double dvolume = gst_stream_volume_convert_volume(GST_STREAM_VOLUME_FORMAT_LINEAR,
 			                GST_STREAM_VOLUME_FORMAT_CUBIC, volume);
 			gst_stream_volume_set_volume(vptr, GST_STREAM_VOLUME_FORMAT_CUBIC, dvolume);
-//			osd->setText("Volume: " + QString::number(int(volume * 100)));
+			if (osd)
+			{
+				osd->setText("Volume: " + QString::number(int(volume * 100)));
+			}
 		}
 	}
 }
 
 void Gstreamer::setHue(double hue)
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("hue");
 		if (channel)
 		{
 			int value = int(hue * double(hue > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(balance->Get(), channel, value);
+			gst_color_balance_set_value(*balance, channel, value);
 		}
 	}
 }
 
 void Gstreamer::setSaturation(double saturation)
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("saturation");
 		if (channel)
 		{
 			int value = int(saturation * double(saturation > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(balance->Get(), channel, value);
+			gst_color_balance_set_value(*balance, channel, value);
 		}
 	}
 }
 
 void Gstreamer::setBrightness(double brightness)
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("brightness");
 		if (channel)
 		{
 			int value = int(brightness * double(brightness > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(balance->Get(), channel, value);
+			gst_color_balance_set_value(*balance, channel, value);
 		}
 	}
 }
 
 void Gstreamer::setContrast(double contrast)
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("contrast");
 		if (channel)
 		{
 			int value = int(contrast * double(contrast > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(balance->Get(), channel, value);
+			gst_color_balance_set_value(*balance, channel, value);
 		}
 	}
 }
@@ -338,16 +393,16 @@ void Gstreamer::forceaspectratio()
 	if (pipeline)
 	{
 		aspectratio = !aspectratio;
-		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, NULL);
-//		if (aspectratio)
-//		{
-//			osd->setText("keep aspect ratio");
-//		}
-//		else
-//		{
-//			osd->setText("ignore aspect ratio");
-//		}
-//		update();
+		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
+		if (aspectratio)
+		{
+			osd->setText("keep aspect ratio");
+		}
+		else
+		{
+			osd->setText("ignore aspect ratio");
+		}
+		update();
 	}
 }
 
@@ -360,13 +415,13 @@ void Gstreamer::togglesubtitles()
 		if (subtitles)
 		{
 //			osd->setText("no subtitles");
-			g_object_set(G_OBJECT(pipeline), "suburi", NULL, NULL);
+			g_object_set(G_OBJECT(pipeline), "suburi", nullptr, nullptr);
 		}
 		else
 		{
 //			osd->setText("subtitles");
 			QUrl uri = makeUrl(sub);
-			g_object_set(G_OBJECT(pipeline), "suburi", uri.toEncoded().data(), NULL);
+			g_object_set(G_OBJECT(pipeline), "suburi", uri.toEncoded().data(), nullptr);
 		}
 		subtitles = !subtitles;
 	}
@@ -389,18 +444,11 @@ void Gstreamer::mute()
 		{
 			bool mute = gst_stream_volume_get_mute(volume);
 			gst_stream_volume_set_mute(volume, !mute);
-			//osd->setText(mute ? "unmute" : "mute");
+			if (osd)
+			{
+				osd->setText(mute ? "unmute" : "mute");
+			}
 		}
-	}
-}
-
-void Gstreamer::seek(const UTime &pos)
-{
-	if (pipeline)
-	{
-//		gst_element_get_state(pipeline, NULL, NULL, 100 * GST_MSECOND);
-		gint64 ms = gint64(pos.Msec);
-		gst_element_seek(pipeline, 1.0, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH, GST_SEEK_TYPE_SET, ms * GST_MSECOND, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
 	}
 }
 
@@ -408,7 +456,11 @@ UTime Gstreamer::position() const
 {
 	GstFormat fmt = GST_FORMAT_TIME;
 	gint64 value = 0;
+#if GST_VERSION_MAJOR == 1
 	if (gst_element_query_position(pipeline, fmt, &value))
+#else
+	if (gst_element_query_position(pipeline, &fmt, &value))
+#endif
 		return UTime(qint64(value));
 	else
 		return UTime();
@@ -418,7 +470,11 @@ UTime Gstreamer::duration() const
 {
 	GstFormat fmt = GST_FORMAT_TIME;
 	gint64 value = 0;
+#if GST_VERSION_MAJOR == 1
 	if (gst_element_query_duration(pipeline, fmt, &value))
+#else
+	if (gst_element_query_duration(pipeline, &fmt, &value))
+#endif
 		return UTime(qint64(value));
 	else
 		return UTime();
@@ -429,7 +485,6 @@ double Gstreamer::volume() const
 	if (pipeline)
 	{
 		GstStreamVolume* vptr = GST_STREAM_VOLUME(pipeline);
-
 		if (vptr)
 		{
 			return gst_stream_volume_get_volume(vptr, GST_STREAM_VOLUME_FORMAT_CUBIC);
@@ -440,12 +495,12 @@ double Gstreamer::volume() const
 
 double Gstreamer::hue() const
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("hue");
 		if (channel)
 		{
-			int value = gst_color_balance_get_value(balance->Get(), channel);
+			int value = gst_color_balance_get_value(*balance, channel);
 			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
 		}
 	}
@@ -454,12 +509,12 @@ double Gstreamer::hue() const
 
 double Gstreamer::saturation() const
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("saturation");
 		if (channel)
 		{
-			int value = gst_color_balance_get_value(balance->Get(), channel);
+			int value = gst_color_balance_get_value(*balance, channel);
 			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
 		}
 	}
@@ -468,12 +523,12 @@ double Gstreamer::saturation() const
 
 double Gstreamer::brightness() const
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("brightness");
 		if (channel)
 		{
-			int value = gst_color_balance_get_value(balance->Get(), channel);
+			int value = gst_color_balance_get_value(*balance, channel);
 			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
 		}
 	}
@@ -482,42 +537,61 @@ double Gstreamer::brightness() const
 
 double Gstreamer::contrast() const
 {
-	if (pipeline)
+	if (pipeline && balance)
 	{
 		GstColorBalanceChannel *channel = balance->Channel("contrast");
 		if (channel)
 		{
-			int value = gst_color_balance_get_value(balance->Get(), channel);
+			int value = gst_color_balance_get_value(*balance, channel);
 			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
 		}
 	}
 	return 0.0;
 }
-
-void Gstreamer::setPosition(const UTime &pos, Gstreamer::SeekFlag flag)
+// FIX
+void Gstreamer::seek(const UTime &pos, Gstreamer::SeekFlag flag)
 {
 	if (pipeline)
 	{
-		//
+//		gst_element_get_state(pipeline, nullptr, nullptr, 100 * GST_MSECOND);
+		GstSeekFlags flags = GstSeekFlags(GST_SEEK_FLAG_FLUSH | flag);
+//		GST_SEEK_FLAG_ACCURATE
+//		GST_SEEK_FLAG_SKIP
+		gint64 ms = gint64(pos.Msec);
+		gst_element_seek(pipeline, 1.0, GST_FORMAT_TIME, flags, GST_SEEK_TYPE_SET, ms * GST_MSECOND, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
 	}
 }
 
 void Gstreamer::setVideoArea(const QRect &rect)
 {
+#if GST_VERSION_MAJOR == 1
 	if (GST_IS_VIDEO_OVERLAY(xoverlay))
 	{
 		gst_video_overlay_set_render_rectangle(GST_VIDEO_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(),rect.height());
 	}
+#else
+	if (GST_IS_X_OVERLAY(xoverlay))
+	{
+		gst_x_overlay_set_render_rectangle(GST_X_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(),rect.height());
+	}
+#endif
 }
 
 void Gstreamer::expose()
 {
 	if (state() == GST_STATE_PLAYING || state() == GST_STATE_PAUSED)
 	{
+#if GST_VERSION_MAJOR == 1
 		if (GST_IS_VIDEO_OVERLAY(xoverlay))
 		{
 			gst_video_overlay_expose(xoverlay);
 		}
+#else
+		if (GST_IS_X_OVERLAY(xoverlay))
+		{
+			gst_x_overlay_expose(xoverlay);
+		}
+#endif
 	}
 	else
 	{

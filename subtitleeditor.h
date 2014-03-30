@@ -2,7 +2,7 @@
 #define SUBTITLEEDITOR_H
 
 #include "settings.h"
-//#include "player.h"
+#include "player.h"
 #include <QPlainTextEdit>
 
 class SubtitleEditor : public QPlainTextEdit
@@ -12,7 +12,7 @@ public:
 	explicit SubtitleEditor(QWidget *parent = 0);
 	void loadSubtitles(const QString &filename);
 	void saveSubtitles(const QString &filename);
-	//void setPlayer(Player *player);
+	void setPlayer(PlayerInterface *iplayer);
 
 protected:
 	virtual void keyPressEvent(QKeyEvent *e);
@@ -20,7 +20,7 @@ protected:
 
 private:
 	Settings *settings;
-//	Player *player;
+	PlayerInterface *player;
 	QMap<qint32, int> startFrames;
 	void highlightLine(int line = -1);
 	bool extractFrame(qint32 &frame, const QString &str);
@@ -29,7 +29,6 @@ private:
 	void gotoLine(qint32 frame);
 
 	QString subFilename;
-
 signals:
 	void hideWindow();
 	void jump(qint32);

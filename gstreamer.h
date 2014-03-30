@@ -5,26 +5,33 @@
 #include <QTimer>
 #include <QUrl>
 #include <gst/gst.h>
+#if GST_VERSION_MAJOR == 1
 #include <gst/video/videooverlay.h>
 #include <gst/audio/streamvolume.h>
-#include "metadata.h"
+#else
+#include <gst/interfaces/xoverlay.h>
+#include <gst/interfaces/streamvolume.h>
+#endif
+#include "player.h"
+#include "utime.h"
 #include "osd.h"
 #include "balance.h"
+#include "metadata.h"
 
-class Gstreamer : public QObject
+class Gstreamer : public PlayerInterface
 {
 	Q_OBJECT
-
 public:
-	enum SeekFlag { None, Accurate, Skip };
+	enum SeekFlag { None=0, Accurate=2, Skip=16 };
 
 	Gstreamer(QWidget *window);
 	~Gstreamer();
 	void setVideo(const QString &path);
 	void setSubtitles(const QString &path);
-	bool embed(QWidget *window);
+	void setFont(const QString &font, const QString &enc);
+	void setPosition(const QTime &pos);
+	void setPosition(const qint32 frame);
 
-	void seek(const UTime &pos);
 	UTime position() const;
 	UTime duration() const;
 	double volume() const;
@@ -33,19 +40,24 @@ public:
 	double brightness() const;
 	double contrast() const;
 
-	void setPosition(const UTime &pos, SeekFlag flag = None);
-
 	void expose();
 	void setVideoArea(const QRect &rect);
 	void setHardwareAcceleration(bool enable);
 
-//	GstTime length() const;
+	bool canSeek();
 //	MetaData metadata() const;
+
+protected:
+//	void paintEvent(QPaintEvent *event = 0);
 
 private:
 	QWidget *surface;
 	GstElement *pipeline;
+#if GST_VERSION_MAJOR == 1
 	GstVideoOverlay *xoverlay;
+#else
+	GstXOverlay *xoverlay;
+#endif
 
 	QTimer positionTimer;
 
@@ -60,12 +72,14 @@ private:
 
 	QUrl makeUrl(const QString &path);
 
+	void seek(const UTime &pos, SeekFlag flag = None);
+
 	static gboolean busCallback(GstBus *bus, GstMessage *msg, gpointer args);
 	static void handlePipelineStateChange(Gstreamer *gst, GstMessage *msg);
 
 signals:
 	void positionChanged();
-	void stateChanged();
+	void stateChanged(); // wrzuć do playerI ?
 
 public slots:
 	void play();

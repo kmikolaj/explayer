@@ -5,8 +5,6 @@
 #include <QVector>
 #include <gst/gst.h>
 
-#include <QDebug>
-
 class VideoFilter : public QObject
 {
 	Q_OBJECT

@@ -1,8 +1,7 @@
 #include "videofilter.h"
 
 void VideoFilter::link(VideoFilter *dest)
-{	qDebug() << "LINKIN";
-
+{
 	if (videosink)
 	{
 		gst_bin_remove(GST_BIN(bin), videosink);

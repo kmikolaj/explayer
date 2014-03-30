@@ -17,7 +17,6 @@ class JumpDialog;
 class JumpDialog : public QDialog
 {
 	Q_OBJECT
-
 public:
 	explicit JumpDialog(QWidget *parent = 0);
 	~JumpDialog();

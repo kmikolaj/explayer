@@ -1,53 +1,20 @@
 #ifndef METADATA_H
 #define METADATA_H
 
-#include <QTime>
+#include <gst/pbutils/gstdiscoverer.h>
+#include <QVariantMap>
+#include "utime.h"
 
-class DPMS
-{
-public:
-	DPMS();
-	void Enable();
-	void Disable();
-	void Restore();
-private:
-	void Store();
-	bool State();
-	bool state;
-};
-
-class UTime
-{
-public:
-	UTime();
-	UTime(const QTime &time);
-	UTime(const qint32 frame);
-	UTime(const qint64 msec);
-	static void setFps(double fps);
-	QTime Time;
-	qint32 Frame;
-	qint64 Msec;
-	qint64 Nsec;
-	bool Valid()
-	{
-		return (framerate > 0.0);
-	}
-	void moveMsec(qint64 msec);
-	void moveFrame(qint32 frame);
-private:
-	static double framerate;
-};
-/*
 class MetaData
 {
 public:
 	MetaData();
-	MetaData(const QGst::DiscovererInfoPtr &_info);
+//	MetaData(const GstDiscovererInfo *info);
 	inline double getFramerate() const
 	{
 		return framerate;
 	}
-	inline GstTime getDuration() const
+	inline UTime getDuration() const
 	{
 		return duration;
 	}
@@ -63,22 +30,22 @@ public:
 	{
 		return valid;
 	}
-	inline QGst::TagList getTags() const
+	inline QVariantMap getTags() const
 	{
 		return tags;
 	}
 private:
-	QGst::DiscovererInfoPtr info;
-	QGst::DiscovererVideoInfoPtr videoInfo;
+//	GstDiscoverer *discoverer;
+//	GstDiscovererInfo *videoInfo;
 	bool valid;
 	double framerate;
-	GstTime duration;
+	UTime duration;
 	quint32 frames;
 	quint64 size;
 	QString filename;
-	QGst::TagList tags;
+	QVariantMap tags;
 
 	void init();
 };
-*/
+
 #endif // METADATA_H
