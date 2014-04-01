@@ -9,10 +9,74 @@ bool subtitles = true;
 bool aspectratio = true;
 bool hasosd = true;
 bool hasbalance = true;
+bool hasharddec =false;
+
+static void print_tag_foreach (const GstTagList *tags, const gchar *tag, gpointer user_data) {
+  GValue val = { 0, };
+  gchar *str;
+  gint depth = GPOINTER_TO_INT (user_data);
+
+  gst_tag_list_copy_value (&val, tags, tag);
+
+  if (G_VALUE_HOLDS_STRING (&val))
+    str = g_value_dup_string (&val);
+  else
+    str = gst_value_serialize (&val);
+
+  g_print ("%*s%s: %s\n", 2 * depth, " ", gst_tag_get_nick (tag), str);
+  g_free (str);
+
+  g_value_unset (&val);
+}
+
+static void on_discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info, GError *err, MetaData **meta)
+{
+	*meta = new MetaData();
+	GstDiscovererResult result;
+
+	result = gst_discoverer_info_get_result (info);
+	if (result != GST_DISCOVERER_OK)
+	{
+		qDebug()<< "dupa;";
+		return;
+	}
+
+	qint64 time = gst_discoverer_info_get_duration(info);
+	(*meta)->setDuration(UTime(time));
+
+ const GstTagList *tags;
+ tags = gst_discoverer_info_get_tags (info);
+ if (tags) {
+   g_print ("Tags:\n");
+   gint depth = 4;
+   gst_tag_list_foreach (tags, print_tag_foreach, GINT_TO_POINTER (depth + 2));
+ }
+GstDiscovererStreamInfo *sinfo;
+sinfo = gst_discoverer_info_get_stream_info (info);
+gst_discoverer_stream_info_unref (sinfo);
+	    /*
+		videoInfo = info->videoStreams()[0].dynamicCast<QGst::DiscovererVideoInfo>();
+
+		framerate = double(videoInfo->framerate().numerator) /
+		            double(videoInfo->framerate().denominator);
+		UTime::setFps(framerate);
+
+		filename = info->uri().toLocalFile();
+		QFile file(filename);
+		size = file.size();
+		valid = true;
+		*/
+	qDebug() << "Discovered sth";
+}
+
+static void on_finished_cb(GstDiscoverer *discoverer, MetaData **meta)
+{
+	qDebug() << "Finished discovering";
+}
 
 Gstreamer::Gstreamer(QWidget *window)
-    : PlayerInterface(window), surface(window), pipeline(nullptr), xoverlay(nullptr),
-      osd(nullptr), balance(nullptr)
+    : PlayerInterface(window), surface(window), pipeline(nullptr), xoverlay(nullptr), discoverer(nullptr),
+      osd(nullptr), balance(nullptr), meta(nullptr)
 {
 	gst_init(nullptr, nullptr);
 	connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
@@ -45,14 +109,21 @@ Gstreamer::Gstreamer(QWidget *window)
 
 		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
 
+		GError *err = nullptr;
+		discoverer = gst_discoverer_new(5 * GST_SECOND, &err);
+
+	    g_signal_connect (discoverer, "discovered", G_CALLBACK (on_discovered_cb), &meta);
+	    g_signal_connect (discoverer, "finished", G_CALLBACK (on_finished_cb), &meta);
+
+	    gst_discoverer_start(discoverer);
+
 		if (hasbalance)
 			balance = new Balance(pipeline, this);
 	}
 
 //	surface->setAttribute(Qt::WA_PaintOnScreen, true);
 //	surface->setAttribute(Qt::WA_NoSystemBackground, true);
-	setHardwareAcceleration(false);
-//			gst_element_set_state(pipeline, GST_STATE_READY);
+	setHardwareAcceleration(hasharddec);
 }
 
 Gstreamer::~Gstreamer()
@@ -62,6 +133,16 @@ Gstreamer::~Gstreamer()
 		gst_element_set_state(pipeline, GST_STATE_NULL);
 		gst_object_unref(pipeline);
 	}
+
+	if (discoverer)
+	{
+	    gst_discoverer_stop(discoverer);
+	    g_object_unref(discoverer);
+	}
+
+	delete meta;
+	delete balance;
+	delete osd;
 }
 // FIX
 void Gstreamer::setVideo(const QString &path)
@@ -73,6 +154,12 @@ void Gstreamer::setVideo(const QString &path)
 //		surface->setAttribute(Qt::WA_PaintOnScreen, true);
 //		surface->setAttribute(Qt::WA_NoSystemBackground, true);
 		g_object_set(G_OBJECT(pipeline), "uri", uri.toEncoded().data(), nullptr);
+
+		// discoverer
+		if (!gst_discoverer_discover_uri_async(discoverer, uri.toEncoded().data()))
+		{
+			qDebug() << "discovery fail";
+		}
 	}
 }
 
@@ -174,6 +261,7 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 	case GST_STATE_PLAYING:
 		//start the timer when the pipeline starts playing
 //		positionTimer.start(int(1000.0 / meta.getFramerate()));
+		emit gst->stateChanged(PLAYING);
 		break;
 	case GST_STATE_PAUSED:
 		//stop the timer when the pipeline pauses
@@ -186,17 +274,17 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 //			setPosition(startingPosition.Time);
 //			startingPosition.Changed = true;
 //		}
+		emit gst->stateChanged(PAUSED);
 		break;
     case GST_STATE_READY:
 		break;
     case GST_STATE_NULL:
 		gst->positionTimer.stop();
+		emit gst->stateChanged(STOPPED);
 		break;
 	default:
 		break;
 	}
-
-	emit gst->stateChanged();
 	// if new == nullptr releasesink()
 }
 
@@ -298,7 +386,7 @@ void Gstreamer::stop()
 	{
 		gst_element_set_state(pipeline, GST_STATE_NULL);
 		refresh();
-		emit stateChanged();
+		emit stateChanged(STOPPED);
 	}
 }
 // FIX

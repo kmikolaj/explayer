@@ -1,32 +1,81 @@
 #include "metadata.h"
 #include <QFile>
-/*
-MetaData::MetaData(const GstDiscoverer *info)
-    : discoverer(info)
-{
-	if (info->videoStreams().size() > 0)
-	{
-		videoInfo = info->videoStreams()[0].dynamicCast<QGst::DiscovererVideoInfo>();
-		tags = info->tags();
-		framerate = double(videoInfo->framerate().numerator) /
-		            double(videoInfo->framerate().denominator);
-		UTime::setFps(framerate);
-		duration = QGst::ClockTime(info->duration()).toTime();
-		frames = duration.Frame;
-		filename = info->uri().toLocalFile();
-		QFile file(filename);
-		size = file.size();
-		valid = true;
-	}
-	else
-	{
-		init();
-	}
-}
-*/
+
 MetaData::MetaData()
 {
 	init();
+}
+
+bool MetaData::getValid() const
+{
+	return valid;
+}
+
+void MetaData::setValid(bool value)
+{
+	valid = value;
+}
+
+double MetaData::getFramerate() const
+{
+	return framerate;
+}
+
+void MetaData::setFramerate(double value)
+{
+	framerate = value;
+}
+
+UTime MetaData::getDuration() const
+{
+	return duration;
+}
+
+void MetaData::setDuration(const UTime &value)
+{
+	duration = value;
+	frames = value.Frame;
+}
+
+qint32 MetaData::getFrames() const
+{
+	return frames;
+}
+
+void MetaData::setFrames(const qint32 &value)
+{
+	duration = UTime(value);
+	frames = value;
+}
+
+qint64 MetaData::getSize() const
+{
+	return size;
+}
+
+void MetaData::setSize(const qint64 &value)
+{
+	size = value;
+}
+
+QString MetaData::getFilename() const
+{
+	return filename;
+}
+
+void MetaData::setFilename(const QString &value)
+{
+	filename = value;
+}
+
+QVariantMap MetaData::getTags() const
+{
+	return tags;
+}
+
+void MetaData::setTags(const QVariantMap &value)
+{
+	tags = value;
 }
 
 void MetaData::init()

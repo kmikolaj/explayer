@@ -49,8 +49,8 @@ private:
 	void updateStatus(const UTime &position, const UTime &length);
 
 public slots:
+	void stateUpdate(PlayerInterface::State);
 	void positionUpdate();
-	void stateUpdate();
 	void open();
 	void play();
 	void play(QString);

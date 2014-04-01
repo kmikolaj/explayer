@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include "utils.h"
 #include <QFileDialog>
-#include "gstreamer.h"
+#include "gstreamer/gstreamer.h"
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	// Video Widget
 	connect(player, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
-	connect(player, SIGNAL(stateChanged()), this, SLOT(stateUpdate()));
+	connect(player, SIGNAL(stateChanged(PlayerInterface::State)), this, SLOT(stateUpdate(PlayerInterface::State)));
 
 	// Controls Widget
 	connect(ui->controls, SIGNAL(play()), player, SLOT(play()));
@@ -222,15 +222,16 @@ void MainWindow::positionUpdate()
 	updateStatus(pos, len);
 }
 // FIX
-void MainWindow::stateUpdate()
+void MainWindow::stateUpdate(PlayerInterface::State state)
 {
+	qDebug() << state;
 	/*
-	QGst::State newState = player->state();
 	// TODO: set controls state
 	ui->controls->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic,
 	                        QGst::StreamVolumeFormatLinear,
 	                        player->volume()) * 100);
-
+	*/
+	/*
 	switch (newState)
 	{
 	case QGst::StateNull:

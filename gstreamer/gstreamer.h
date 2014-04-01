@@ -12,6 +12,7 @@
 #include <gst/interfaces/xoverlay.h>
 #include <gst/interfaces/streamvolume.h>
 #endif
+#include <gst/pbutils/gstdiscoverer.h>
 #include "player.h"
 #include "utime.h"
 #include "osd.h"
@@ -45,7 +46,6 @@ public:
 	void setHardwareAcceleration(bool enable);
 
 	bool canSeek();
-//	MetaData metadata() const;
 
 protected:
 //	void paintEvent(QPaintEvent *event = 0);
@@ -58,11 +58,14 @@ private:
 #else
 	GstXOverlay *xoverlay;
 #endif
+	GstDiscoverer *discoverer;
 
 	QTimer positionTimer;
 
 	Osd *osd;
 	Balance *balance;
+
+	MetaData *meta;
 
 	QString video;
 	QString sub;
@@ -78,8 +81,7 @@ private:
 	static void handlePipelineStateChange(Gstreamer *gst, GstMessage *msg);
 
 signals:
-	void positionChanged();
-	void stateChanged(); // wrzuć do playerI ?
+	void test();
 
 public slots:
 	void play();

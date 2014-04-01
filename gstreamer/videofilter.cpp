@@ -30,5 +30,10 @@ void VideoFilter::link(VideoFilter *dest)
 
 void VideoFilter::unlink(VideoFilter *dest)
 {
+	// TODO
+}
 
+QVector<GstElement *> VideoFilter::getElements()
+{
+	return elements;
 }

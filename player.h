@@ -33,7 +33,6 @@ public:
 	enum State
 	{
 		UNKNOWN,
-		READY,
 		PLAYING,
 		PAUSED,
 		STOPPED,
@@ -48,7 +47,7 @@ private:
 
 signals:
 	void positionChanged();
-	void stateChanged();
+	void stateChanged(PlayerInterface::State);
 
 public slots:
 	virtual void play() = 0;

@@ -1,7 +1,6 @@
 #ifndef METADATA_H
 #define METADATA_H
 
-#include <gst/pbutils/gstdiscoverer.h>
 #include <QVariantMap>
 #include "utime.h"
 
@@ -9,41 +8,37 @@ class MetaData
 {
 public:
 	MetaData();
-//	MetaData(const GstDiscovererInfo *info);
-	inline double getFramerate() const
-	{
-		return framerate;
-	}
-	inline UTime getDuration() const
-	{
-		return duration;
-	}
-	inline quint64 getSize() const
-	{
-		return size;
-	}
-	inline QString getFileName() const
-	{
-		return filename;
-	}
-	inline bool isValid() const
-	{
-		return valid;
-	}
-	inline QVariantMap getTags() const
-	{
-		return tags;
-	}
+
+	bool getValid() const;
+	void setValid(bool value);
+
+	double getFramerate() const;
+	void setFramerate(double value);
+
+	UTime getDuration() const;
+	void setDuration(const UTime &value);
+
+	qint32 getFrames() const;
+	void setFrames(const qint32 &value);
+
+	qint64 getSize() const;
+	void setSize(const qint64 &value);
+
+	QString getFilename() const;
+	void setFilename(const QString &value);
+
+	QVariantMap getTags() const;
+	void setTags(const QVariantMap &value);
+
 private:
-//	GstDiscoverer *discoverer;
-//	GstDiscovererInfo *videoInfo;
 	bool valid;
 	double framerate;
 	UTime duration;
-	quint32 frames;
-	quint64 size;
+	qint32 frames;
+	qint64 size;
 	QString filename;
 	QVariantMap tags;
+	bool seekable;
 
 	void init();
 };
