@@ -12,12 +12,6 @@ Settings *Settings::GetSettings(QObject *parent)
 	return settings;
 }
 
-QString Settings::GetVersionInfo()
-{
-	QString info;
-	return info.sprintf("Version: %d.%d.%d (Codename: %s)", _MAJOR_, _MINOR_, _REVISION_, _CODENAME_);
-}
-
 void Settings::updatePosition(const QString &file, const QTime &time)
 {
 	if (Gui.LastPosition.contains(file) && time == QTime(0, 0))

@@ -26,8 +26,8 @@ private:
 	void init();
 	bool osdVisible;
 	bool timeVisible;
-	GstElement* overlay;
-	GstElement* time;
+	GstElement *overlay;
+	GstElement *time;
 	QTimer timer;
 };
 

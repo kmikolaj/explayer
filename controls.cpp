@@ -151,6 +151,5 @@ void Controls::on_openButton_clicked()
 
 void Controls::on_volumeSlider_sliderMoved(int position)
 {
-//	double newPos = QGst::StreamVolume::convert(QGst::StreamVolumeFormatLinear, QGst::StreamVolumeFormatCubic, position / 100.0);
-//	emit volumeChanged(newPos);
+	emit volumeChanged(double(position) / 100.0);
 }

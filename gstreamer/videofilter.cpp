@@ -8,7 +8,7 @@ void VideoFilter::link(VideoFilter *dest)
 //		videosink.clear();
 	}
 	videosink = dest->videosink;
-	QVector<GstElement*> elements = dest->getElements();
+	QVector<GstElement *> elements = dest->getElements();
 	for (int i = 0; i < elements.size(); i++)
 	{
 		gst_bin_remove(GST_BIN(dest->bin), elements[i]);

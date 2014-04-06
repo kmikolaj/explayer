@@ -11,6 +11,7 @@
 #include "controls.h"
 #include "settings.h"
 #include "jumpdialog.h"
+#include "version.h"
 
 namespace Ui
 {
@@ -31,6 +32,8 @@ public:
 	void addHotkey(const QKeySequence &key, const QObject *obj, const char *slot);
 	void addHotkey(const QKeySequence &key, QMap<const char *, const QObject *> slot);
 
+	static QString GetVersionInfo();
+
 protected:
 	void changeEvent(QEvent *event);
 
@@ -49,8 +52,9 @@ private:
 	void updateStatus(const UTime &position, const UTime &length);
 
 public slots:
-	void stateUpdate(PlayerInterface::State);
 	void positionUpdate();
+	void volumeUpdate(double);
+	void stateUpdate(PlayerInterface::State);
 	void open();
 	void play();
 	void play(QString);

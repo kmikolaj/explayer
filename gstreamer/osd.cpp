@@ -61,7 +61,7 @@ void Osd::init()
 	time = gst_element_factory_make("timeoverlay", "time1");
 	bin = gst_bin_new("osd");
 
-  	gst_bin_add_many (GST_BIN (bin), videosink, time, overlay, nullptr);
+	gst_bin_add_many(GST_BIN(bin), videosink, time, overlay, nullptr);
 	gst_element_link_many(overlay, time, videosink, nullptr);
 	GstPad *pad = gst_element_get_static_pad(overlay, "video_sink");
 	GstPad *ghostpad = gst_ghost_pad_new("sink", pad);

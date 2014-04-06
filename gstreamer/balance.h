@@ -14,13 +14,16 @@ class Balance : public QObject
 {
 	Q_OBJECT
 public:
-	Balance(GstElement *pipeline, QObject *parent=0);
+	Balance(GstElement *pipeline, QObject *parent = 0);
 	~Balance();
 	GstColorBalanceChannel *Channel(const QString &);
-	operator GstColorBalance*() { return balance; }
+	operator GstColorBalance *()
+	{
+		return balance;
+	}
 
 private:
-	QMap<QString, GstColorBalanceChannel*> channels;
+	QMap<QString, GstColorBalanceChannel *> channels;
 	GstColorBalance *balance;
 };
 

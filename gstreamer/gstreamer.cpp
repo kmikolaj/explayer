@@ -3,80 +3,18 @@
 #include <QDebug>
 #include <QTimer>
 #include <QPainter>
+#include "discoverer.h"
 
 // temporary, options
 bool subtitles = true;
 bool aspectratio = true;
 bool hasosd = true;
 bool hasbalance = true;
-bool hasharddec =false;
-
-static void print_tag_foreach (const GstTagList *tags, const gchar *tag, gpointer user_data) {
-  GValue val = { 0, };
-  gchar *str;
-  gint depth = GPOINTER_TO_INT (user_data);
-
-  gst_tag_list_copy_value (&val, tags, tag);
-
-  if (G_VALUE_HOLDS_STRING (&val))
-    str = g_value_dup_string (&val);
-  else
-    str = gst_value_serialize (&val);
-
-  g_print ("%*s%s: %s\n", 2 * depth, " ", gst_tag_get_nick (tag), str);
-  g_free (str);
-
-  g_value_unset (&val);
-}
-
-static void on_discovered_cb(GstDiscoverer *discoverer, GstDiscovererInfo *info, GError *err, MetaData **meta)
-{
-	*meta = new MetaData();
-	GstDiscovererResult result;
-
-	result = gst_discoverer_info_get_result (info);
-	if (result != GST_DISCOVERER_OK)
-	{
-		qDebug()<< "dupa;";
-		return;
-	}
-
-	qint64 time = gst_discoverer_info_get_duration(info);
-	(*meta)->setDuration(UTime(time));
-
- const GstTagList *tags;
- tags = gst_discoverer_info_get_tags (info);
- if (tags) {
-   g_print ("Tags:\n");
-   gint depth = 4;
-   gst_tag_list_foreach (tags, print_tag_foreach, GINT_TO_POINTER (depth + 2));
- }
-GstDiscovererStreamInfo *sinfo;
-sinfo = gst_discoverer_info_get_stream_info (info);
-gst_discoverer_stream_info_unref (sinfo);
-	    /*
-		videoInfo = info->videoStreams()[0].dynamicCast<QGst::DiscovererVideoInfo>();
-
-		framerate = double(videoInfo->framerate().numerator) /
-		            double(videoInfo->framerate().denominator);
-		UTime::setFps(framerate);
-
-		filename = info->uri().toLocalFile();
-		QFile file(filename);
-		size = file.size();
-		valid = true;
-		*/
-	qDebug() << "Discovered sth";
-}
-
-static void on_finished_cb(GstDiscoverer *discoverer, MetaData **meta)
-{
-	qDebug() << "Finished discovering";
-}
+bool hasharddec = false;
 
 Gstreamer::Gstreamer(QWidget *window)
-    : PlayerInterface(window), surface(window), pipeline(nullptr), xoverlay(nullptr), discoverer(nullptr),
-      osd(nullptr), balance(nullptr), meta(nullptr)
+	: PlayerInterface(window), pipeline(nullptr), xoverlay(nullptr), discoverer(nullptr),
+	  osd(nullptr), balance(nullptr)
 {
 	gst_init(nullptr, nullptr);
 	connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
@@ -96,26 +34,27 @@ Gstreamer::Gstreamer(QWidget *window)
 		WId xwinid = surface->winId();
 		if (xwinid != 0)
 #if GST_VERSION_MAJOR == 1
-		    gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
+			gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
 #else
 			gst_x_overlay_set_window_handle(GST_X_OVERLAY(pipeline), xwinid);
 #endif
 
 		// add bus
 		GstBus *bus;
-		bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline));
+		bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
 		gst_bus_add_watch(bus, Gstreamer::busCallback, this);
 		gst_object_unref(bus);
 
 		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
 
-		GError *err = nullptr;
-		discoverer = gst_discoverer_new(5 * GST_SECOND, &err);
+		discoverer = gst_discoverer_new(5 * GST_SECOND, nullptr);
 
-	    g_signal_connect (discoverer, "discovered", G_CALLBACK (on_discovered_cb), &meta);
-	    g_signal_connect (discoverer, "finished", G_CALLBACK (on_finished_cb), &meta);
-
-	    gst_discoverer_start(discoverer);
+		if (discoverer)
+		{
+			g_signal_connect(discoverer, "discovered", G_CALLBACK(Discoverer::on_discovered), this);
+			g_signal_connect(discoverer, "finished", G_CALLBACK(Discoverer::on_finished), &metadata);
+			gst_discoverer_start(discoverer);
+		}
 
 		if (hasbalance)
 			balance = new Balance(pipeline, this);
@@ -136,11 +75,10 @@ Gstreamer::~Gstreamer()
 
 	if (discoverer)
 	{
-	    gst_discoverer_stop(discoverer);
-	    g_object_unref(discoverer);
+		gst_discoverer_stop(discoverer);
+		g_object_unref(discoverer);
 	}
 
-	delete meta;
 	delete balance;
 	delete osd;
 }
@@ -149,8 +87,8 @@ void Gstreamer::setVideo(const QString &path)
 {
 	if (pipeline)
 	{
-		video = path;
 		QUrl uri = makeUrl(path);
+		videoPath = uri.toLocalFile();
 //		surface->setAttribute(Qt::WA_PaintOnScreen, true);
 //		surface->setAttribute(Qt::WA_NoSystemBackground, true);
 		g_object_set(G_OBJECT(pipeline), "uri", uri.toEncoded().data(), nullptr);
@@ -167,8 +105,8 @@ void Gstreamer::setSubtitles(const QString &path)
 {
 	if (pipeline)
 	{
-		sub = path;
 		QUrl uri = makeUrl(path);
+		sub = uri;
 		if (subtitles)
 		{
 			g_object_set(G_OBJECT(pipeline), "suburi", uri.toEncoded().data(), nullptr);
@@ -188,13 +126,13 @@ void Gstreamer::setFont(const QString &font, const QString &enc)
 void Gstreamer::setPosition(const QTime &pos)
 {
 //	if (player->metadata().getTags().containerFormat() == "ASF")
-//		player->setPosition(newPos, Accurate);
+//		player->setPosition(newPos, GST_SEEK_FLAG_ACCURATE);
 	seek(UTime(pos));
 }
 
 void Gstreamer::setPosition(const qint32 frame)
 {
-	seek(UTime(frame), SeekFlag(Accurate | Skip));
+	seek(UTime(frame), GstSeekFlags(GST_SEEK_FLAG_ACCURATE | GST_SEEK_FLAG_SKIP | GST_SEEK_FLAG_FLUSH));
 }
 
 GstState Gstreamer::state()
@@ -210,7 +148,7 @@ GstState Gstreamer::state()
 gboolean Gstreamer::busCallback(GstBus *bus, GstMessage *msg, gpointer args)
 {
 	Q_UNUSED(bus);
-	Gstreamer* gst = (Gstreamer*)args;
+	Gstreamer *gst = (Gstreamer *)args;
 	switch (GST_MESSAGE_TYPE(msg))
 	{
 	case GST_MESSAGE_STATE_CHANGED:
@@ -255,12 +193,12 @@ gboolean Gstreamer::busCallback(GstBus *bus, GstMessage *msg, gpointer args)
 void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 {
 	GstState old_state, new_state;
-	gst_message_parse_state_changed (msg, &old_state, &new_state, nullptr);
-	switch(new_state)
+	gst_message_parse_state_changed(msg, &old_state, &new_state, nullptr);
+	switch (new_state)
 	{
 	case GST_STATE_PLAYING:
 		//start the timer when the pipeline starts playing
-//		positionTimer.start(int(1000.0 / meta.getFramerate()));
+		gst->positionTimer.start(int(1000.0 / gst->metadata->getFramerate(1)));
 		emit gst->stateChanged(PLAYING);
 		break;
 	case GST_STATE_PAUSED:
@@ -269,6 +207,10 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 		{
 			gst->positionTimer.stop();
 		}
+		else if (old_state == GST_STATE_READY)
+		{
+			emit gst->volumeChanged((gst->volume() + 0.005) * 100.0);
+		}
 //		else if (old_state == GST_STATE_READY && !startingPosition.Changed)
 //		{
 //			setPosition(startingPosition.Time);
@@ -276,9 +218,9 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 //		}
 		emit gst->stateChanged(PAUSED);
 		break;
-    case GST_STATE_READY:
+	case GST_STATE_READY:
 		break;
-    case GST_STATE_NULL:
+	case GST_STATE_NULL:
 		gst->positionTimer.stop();
 		emit gst->stateChanged(STOPPED);
 		break;
@@ -308,6 +250,7 @@ bool Gstreamer::canSeek()
 	GstState currentState = state();
 	return (currentState != GST_STATE_READY && currentState != GST_STATE_NULL);
 }
+
 /*
 void Gstreamer::paintEvent(QPaintEvent *event)
 {
@@ -315,6 +258,7 @@ void Gstreamer::paintEvent(QPaintEvent *event)
 	expose();
 }
 */
+
 void Gstreamer::refresh()
 {
 	surface->setAttribute(Qt::WA_PaintOnScreen, false);
@@ -389,36 +333,21 @@ void Gstreamer::stop()
 		emit stateChanged(STOPPED);
 	}
 }
-// FIX
+
 void Gstreamer::setVolume(double volume)
 {
-//	if (vol > 0.0)
-//	{
-//		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
-//		double newVol = linear - MIN(linear, 0.05);
-//		player->setVolume(newVol);
-//		ui->controls->setVolume(newVol * 100);
-//	}
-
-//	if (vol < 1.0)
-//	{
-//		double linear = QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic, QGst::StreamVolumeFormatLinear, vol);
-//		double newVol = linear + MIN(1.0 - linear, 0.05);
-//		player->setVolume(newVol);
-//		ui->controls->setVolume(newVol * 100);
-//	}
-
+	volume = MIN(MAX(volume, 0.0), 1.0);
 	if (pipeline)
 	{
-		GstStreamVolume* vptr = GST_STREAM_VOLUME(pipeline);
+		GstStreamVolume *vptr = GST_STREAM_VOLUME(pipeline);
 		if (vptr)
 		{
-			double dvolume = gst_stream_volume_convert_volume(GST_STREAM_VOLUME_FORMAT_LINEAR,
-			                GST_STREAM_VOLUME_FORMAT_CUBIC, volume);
-			gst_stream_volume_set_volume(vptr, GST_STREAM_VOLUME_FORMAT_CUBIC, dvolume);
+			gst_stream_volume_set_volume(vptr, GST_STREAM_VOLUME_FORMAT_CUBIC, volume);
+			double dvolume = (volume + 0.005) * 100.0;
+			emit volumeChanged(dvolume);
 			if (osd)
 			{
-				osd->setText("Volume: " + QString::number(int(volume * 100)));
+				osd->setText("Volume: " + QString::number(int(dvolume)));
 			}
 		}
 	}
@@ -426,54 +355,22 @@ void Gstreamer::setVolume(double volume)
 
 void Gstreamer::setHue(double hue)
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("hue");
-		if (channel)
-		{
-			int value = int(hue * double(hue > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(*balance, channel, value);
-		}
-	}
+	setBalanceChannel("hue", hue);
 }
 
 void Gstreamer::setSaturation(double saturation)
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("saturation");
-		if (channel)
-		{
-			int value = int(saturation * double(saturation > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(*balance, channel, value);
-		}
-	}
+	setBalanceChannel("saturation", saturation);
 }
 
 void Gstreamer::setBrightness(double brightness)
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("brightness");
-		if (channel)
-		{
-			int value = int(brightness * double(brightness > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(*balance, channel, value);
-		}
-	}
+	setBalanceChannel("brightness", brightness);
 }
 
 void Gstreamer::setContrast(double contrast)
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("contrast");
-		if (channel)
-		{
-			int value = int(contrast * double(contrast > 0 ? channel->max_value : channel->min_value));
-			gst_color_balance_set_value(*balance, channel, value);
-		}
-	}
+	setBalanceChannel("contrast", contrast);
 }
 
 void Gstreamer::forceaspectratio()
@@ -508,8 +405,7 @@ void Gstreamer::togglesubtitles()
 		else
 		{
 //			osd->setText("subtitles");
-			QUrl uri = makeUrl(sub);
-			g_object_set(G_OBJECT(pipeline), "suburi", uri.toEncoded().data(), nullptr);
+			g_object_set(G_OBJECT(pipeline), "suburi", sub.toEncoded().data(), nullptr);
 		}
 		subtitles = !subtitles;
 	}
@@ -527,7 +423,7 @@ void Gstreamer::mute()
 {
 	if (pipeline)
 	{
-		GstStreamVolume* volume = GST_STREAM_VOLUME(pipeline);
+		GstStreamVolume *volume = GST_STREAM_VOLUME(pipeline);
 		if (volume)
 		{
 			bool mute = gst_stream_volume_get_mute(volume);
@@ -540,10 +436,16 @@ void Gstreamer::mute()
 	}
 }
 
+void Gstreamer::on_metadata_update()
+{
+	UTime::setFps(getMetadata()->getFramerate(1));
+}
+
 UTime Gstreamer::position() const
 {
 	GstFormat fmt = GST_FORMAT_TIME;
 	gint64 value = 0;
+
 #if GST_VERSION_MAJOR == 1
 	if (gst_element_query_position(pipeline, fmt, &value))
 #else
@@ -572,7 +474,7 @@ double Gstreamer::volume() const
 {
 	if (pipeline)
 	{
-		GstStreamVolume* vptr = GST_STREAM_VOLUME(pipeline);
+		GstStreamVolume *vptr = GST_STREAM_VOLUME(pipeline);
 		if (vptr)
 		{
 			return gst_stream_volume_get_volume(vptr, GST_STREAM_VOLUME_FORMAT_CUBIC);
@@ -583,71 +485,64 @@ double Gstreamer::volume() const
 
 double Gstreamer::hue() const
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("hue");
-		if (channel)
-		{
-			int value = gst_color_balance_get_value(*balance, channel);
-			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
-		}
-	}
-	return 0.0;
+	return getBalanceChannel("hue");
 }
 
 double Gstreamer::saturation() const
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("saturation");
-		if (channel)
-		{
-			int value = gst_color_balance_get_value(*balance, channel);
-			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
-		}
-	}
-	return 0.0;
+	return getBalanceChannel("saturation");
 }
 
 double Gstreamer::brightness() const
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("brightness");
-		if (channel)
-		{
-			int value = gst_color_balance_get_value(*balance, channel);
-			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
-		}
-	}
-	return 0.0;
+	return getBalanceChannel("brightness");
 }
 
 double Gstreamer::contrast() const
 {
-	if (pipeline && balance)
-	{
-		GstColorBalanceChannel *channel = balance->Channel("contrast");
-		if (channel)
-		{
-			int value = gst_color_balance_get_value(*balance, channel);
-			return double(value) / double(value > 0 ? channel->max_value : channel->min_value);
-		}
-	}
-	return 0.0;
+	return getBalanceChannel("contrast");
 }
-// FIX
-void Gstreamer::seek(const UTime &pos, Gstreamer::SeekFlag flag)
+
+void Gstreamer::seek(const UTime &pos, GstSeekFlags flags)
 {
 	if (pipeline)
 	{
-//		gst_element_get_state(pipeline, nullptr, nullptr, 100 * GST_MSECOND);
-		GstSeekFlags flags = GstSeekFlags(GST_SEEK_FLAG_FLUSH | flag);
-//		GST_SEEK_FLAG_ACCURATE
-//		GST_SEEK_FLAG_SKIP
-		gint64 ms = gint64(pos.Msec);
-		gst_element_seek(pipeline, 1.0, GST_FORMAT_TIME, flags, GST_SEEK_TYPE_SET, ms * GST_MSECOND, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
+		GstSeekFlags flag = GstSeekFlags(GST_SEEK_FLAG_FLUSH | flags);
+		gint64 ns = gint64(pos.Nsec);
+		gst_element_seek(pipeline, 1.0, GST_FORMAT_TIME, flag, GST_SEEK_TYPE_SET, ns, GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
 	}
+}
+
+void Gstreamer::setBalanceChannel(const QString &name, double value)
+{
+	if (pipeline && balance)
+	{
+		GstColorBalanceChannel *channel = balance->Channel(name);
+		if (channel)
+		{
+			value = MIN(MAX(value, -1.0), 1.0);
+			int newValue;
+			if (value > 0.0)
+				newValue = int(value * double(channel->max_value) + 0.05);
+			else
+				newValue = int(value * double(-channel->min_value) - 0.05);
+			gst_color_balance_set_value(*balance, channel, newValue);
+		}
+	}
+}
+
+double Gstreamer::getBalanceChannel(const QString &name) const
+{
+	if (pipeline && balance)
+	{
+		GstColorBalanceChannel *channel = balance->Channel(name);
+		if (channel)
+		{
+			int value = gst_color_balance_get_value(*balance, channel);
+			return double(value) / double(value > 0.0 ? channel->max_value : -channel->min_value);
+		}
+	}
+	return 0.0;
 }
 
 void Gstreamer::setVideoArea(const QRect &rect)
@@ -655,12 +550,12 @@ void Gstreamer::setVideoArea(const QRect &rect)
 #if GST_VERSION_MAJOR == 1
 	if (GST_IS_VIDEO_OVERLAY(xoverlay))
 	{
-		gst_video_overlay_set_render_rectangle(GST_VIDEO_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(),rect.height());
+		gst_video_overlay_set_render_rectangle(GST_VIDEO_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(), rect.height());
 	}
 #else
 	if (GST_IS_X_OVERLAY(xoverlay))
 	{
-		gst_x_overlay_set_render_rectangle(GST_X_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(),rect.height());
+		gst_x_overlay_set_render_rectangle(GST_X_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(), rect.height());
 	}
 #endif
 }

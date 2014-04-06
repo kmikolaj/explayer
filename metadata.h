@@ -1,19 +1,41 @@
 #ifndef METADATA_H
 #define METADATA_H
 
-#include <QVariantMap>
+#include <QObject>
+#include <QMap>
+#include <QVector>
 #include "utime.h"
 
-class MetaData
+class Video
 {
 public:
-	MetaData();
+	uint Width;
+	uint Height;
+	double Framerate;
+};
 
-	bool getValid() const;
-	void setValid(bool value);
+class Audio
+{
+public:
+	uint Channels;
+	uint SampleRate;
+	QString Language;
+};
 
-	double getFramerate() const;
-	void setFramerate(double value);
+class Subtitle
+{
+public:
+	QString Language;
+};
+
+class Metadata : public QObject
+{
+	Q_OBJECT
+public:
+	Metadata(QObject *parent = 0);
+	~Metadata();
+
+	double getFramerate(int number) const;
 
 	UTime getDuration() const;
 	void setDuration(const UTime &value);
@@ -27,20 +49,29 @@ public:
 	QString getFilename() const;
 	void setFilename(const QString &value);
 
-	QVariantMap getTags() const;
-	void setTags(const QVariantMap &value);
+	QMap<QString, QString> getTags() const;
+	void addTag(const QString &tag, const QString &value);
+
+	void addVideo(const Video &stream);
+	void addAudio(const Audio &stream);
+	void addSubtitles(const Subtitle &stream);
+
+	bool getSeekable() const;
+	void setSeekable(bool value);
 
 private:
-	bool valid;
-	double framerate;
 	UTime duration;
 	qint32 frames;
 	qint64 size;
 	QString filename;
-	QVariantMap tags;
+	QMap<QString, QString> tags;
+	QVector<Video> video;
+	QVector<Audio> audio;
+	QVector<Subtitle> subtitle;
 	bool seekable;
 
-	void init();
+signals:
+	void updated();
 };
 
 #endif // METADATA_H

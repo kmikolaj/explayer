@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-#include "settings.h"
 #include <QApplication>
 #include <iostream>
 
@@ -9,7 +8,7 @@ int main(int argc, char *argv[])
 	MainWindow w;
 	w.show();
 
-	std::cout << qPrintable(Settings::GetVersionInfo()) << std::endl;
+	std::cout << qPrintable(MainWindow::GetVersionInfo()) << std::endl;
 
 	if (argc > 1)
 	{

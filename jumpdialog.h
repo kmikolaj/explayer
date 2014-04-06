@@ -5,8 +5,8 @@
 
 enum PositionJump
 {
-    TimeJump,
-    FrameJump
+	TimeJump,
+	FrameJump
 };
 
 namespace Ui

@@ -5,13 +5,11 @@
 #include <QMap>
 #include <QTime>
 #include <QKeySequence>
-#include "version.h"
 
 class Settings : public QObject
 {
 public:
 	static Settings *GetSettings(QObject *parent = 0);
-	static QString GetVersionInfo();
 
 	struct
 	{

@@ -15,10 +15,10 @@ public:
 
 	void link(VideoFilter *dest);
 	void unlink(VideoFilter *dest);
-	QVector<GstElement*> getElements();
+	QVector<GstElement *> getElements();
 
 protected:
-	QVector<GstElement*> elements;
+	QVector<GstElement *> elements;
 	GstElement *pipeline;
 	GstElement *bin;
 	GstElement *videosink;

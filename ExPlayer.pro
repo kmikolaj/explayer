@@ -35,7 +35,8 @@ SOURCES += main.cpp\
     player.cpp \
     gstreamer/balance.cpp \
     dpms.cpp \
-    utime.cpp
+    utime.cpp \
+    gstreamer/discoverer.cpp
 
 HEADERS  += mainwindow.h \
     controls.h \
@@ -51,11 +52,13 @@ HEADERS  += mainwindow.h \
     player.h \
     gstreamer/balance.h \
     dpms.h \
-    utime.h
+    utime.h \
+    gstreamer/discoverer.h
 
 FORMS    += mainwindow.ui \
     controls.ui \
     jumpdialog.ui
 
 OTHER_FILES += \
-    README
+    README \
+    LICENCE

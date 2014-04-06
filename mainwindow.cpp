@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	// Video Widget
 	connect(player, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
+	connect(player, SIGNAL(volumeChanged(double)), this, SLOT(volumeUpdate(double)));
 	connect(player, SIGNAL(stateChanged(PlayerInterface::State)), this, SLOT(stateUpdate(PlayerInterface::State)));
 
 	// Controls Widget
@@ -78,6 +79,12 @@ MainWindow::~MainWindow()
 	delete ui;
 }
 
+QString MainWindow::GetVersionInfo()
+{
+	QString info;
+	return info.sprintf("Version: %d.%d.%d [Codename \"%s\"]", _MAJOR_, _MINOR_, _REVISION_, _CODENAME_);
+}
+
 void MainWindow::openFile()
 {
 	if (settings->Gui.RememberDir)
@@ -137,7 +144,7 @@ void MainWindow::addHotkey(const QKeySequence &key, QMap<const char *, const QOb
 {
 	QShortcut *shortcut = new QShortcut(key, this);
 	hotkeys.push_back(shortcut);
-	foreach(const char * i, slot.keys())
+	foreach(const char *i, slot.keys())
 	{
 		connect(shortcut, SIGNAL(activated()), slot[i], i);
 	}
@@ -163,12 +170,9 @@ void MainWindow::changeEvent(QEvent *event)
 void MainWindow::seek(int seconds)
 {
 	UTime newPos = player->position();
-	newPos.moveMsec(1000 * seconds);
-	if (newPos.Time >= QTime(0, 0) && newPos.Time <= player->duration().Time)
-	{
-		player->setPosition(newPos.Time);
-		updateStatus(newPos, player->duration());
-	}
+	newPos.moveNsec(seconds * GST_SECOND);
+	player->setPosition(newPos.Time);
+	updateStatus(newPos, player->duration());
 }
 
 void MainWindow::gotoFrame(qint32 frame, bool pause)
@@ -192,7 +196,7 @@ void MainWindow::gotoTime(const QTime &time, bool pause)
 		if (player->duration().Time > QTime(0, 0))
 		{
 			player->setPosition(time);
-//			updateStatus(UTime(time), player->duration());
+			updateStatus(UTime(time), player->duration());
 			if (pause)
 				player->pause();
 		}
@@ -202,10 +206,9 @@ void MainWindow::gotoTime(const QTime &time, bool pause)
 void MainWindow::updateStatus(const UTime &position, const UTime &length)
 {
 	QString message;
-
 	message = position.Time.toString("hh:mm:ss.zzz") + "/" + length.Time.toString("hh:mm:ss.zzz");
 	message += "\tFrame: " + QString::number(position.Frame);
-//	message += "\tName: " + player->metadata().getFileName();
+	message += "\tName: " + player->getVideoPath();
 
 	ui->statusBar->showMessage(message);
 }
@@ -221,35 +224,31 @@ void MainWindow::positionUpdate()
 	}
 	updateStatus(pos, len);
 }
-// FIX
+
+void MainWindow::volumeUpdate(double volume)
+{
+	ui->controls->setVolume(volume);
+}
+
 void MainWindow::stateUpdate(PlayerInterface::State state)
 {
-	qDebug() << state;
-	/*
-	// TODO: set controls state
-	ui->controls->setVolume(QGst::StreamVolume::convert(QGst::StreamVolumeFormatCubic,
-	                        QGst::StreamVolumeFormatLinear,
-	                        player->volume()) * 100);
-	*/
-	/*
-	switch (newState)
+	switch (state)
 	{
-	case QGst::StateNull:
+	case PlayerInterface::STOPPED:
 		player->update();
 		ui->controls->onStateStopped();
 		positionUpdate();
 		break;
-	case QGst::StatePaused:
+	case PlayerInterface::PAUSED:
 		ui->controls->onStatePaused();
 		positionUpdate();
 		break;
-	case QGst::StatePlaying:
+	case PlayerInterface::PLAYING:
 		ui->controls->onStatePlaying();
 		break;
 	default:
 		break;
 	}
-	*/
 }
 
 void MainWindow::open()
@@ -368,53 +367,53 @@ void MainWindow::volumeDown()
 	double value = player->volume();
 	player->setVolume(value - 0.05);
 }
-// PRZEROBIC na takie jak volume
+
 void MainWindow::hueUp()
 {
-	double value = MIN(MAX(-1.0, player->hue() + 0.1), 1.0);
-	player->setHue(value);
+	double value = player->hue();
+	player->setHue(value + 0.1);
 }
 
 void MainWindow::hueDown()
 {
-	double value = MIN(MAX(-1.0, player->hue() - 0.1), 1.0);
-	player->setHue(value);
+	double value = player->hue();
+	player->setHue(value - 0.1);
 }
 
 void MainWindow::saturationUp()
 {
-	double value = MIN(MAX(-1.0, player->saturation() + 0.1), 1.0);
-	player->setSaturation(value);
+	double value = player->saturation();
+	player->setSaturation(value + 0.1);
 }
 
 void MainWindow::saturationDown()
 {
-	double value = MIN(MAX(-1.0, player->saturation() - 0.1), 1.0);
-	player->setSaturation(value);
+	double value = player->saturation();
+	player->setSaturation(value - 0.1);
 }
 
 void MainWindow::brightnessUp()
 {
-	double value = MIN(MAX(-1.0, player->brightness() + 0.1), 1.0);
-	player->setBrightness(value);
+	double value = player->brightness();
+	player->setBrightness(value + 0.1);
 }
 
 void MainWindow::brightnessDown()
 {
-	double value = MIN(MAX(-1.0, player->brightness() - 0.1), 1.0);
-	player->setBrightness(value);
+	double value = player->brightness();
+	player->setBrightness(value - 0.1);
 }
 
 void MainWindow::contrastUp()
 {
-	double value = MIN(MAX(-1.0, player->contrast() + 0.1), 1.0);
-	player->setContrast(value);
+	double value = player->contrast();
+	player->setContrast(value + 0.1);
 }
 
 void MainWindow::contrastDown()
 {
-	double value = MIN(MAX(-1.0, player->contrast() - 0.1), 1.0);
-	player->setContrast(value);
+	double value = player->contrast();
+	player->setContrast(value - 0.1);
 }
 
 void MainWindow::frameJump()

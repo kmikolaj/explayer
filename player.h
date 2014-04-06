@@ -6,12 +6,14 @@
 #include <QPaintEvent>
 #include "dpms.h"
 #include "utime.h"
+#include "metadata.h"
 
 class PlayerInterface : public QWidget
 {
 	Q_OBJECT
 public:
-	explicit PlayerInterface(QWidget *parent = 0);
+	explicit PlayerInterface(QWidget *parent);
+	~PlayerInterface();
 	virtual void setVideo(const QString &uri) = 0;
 	virtual void setSubtitles(const QString &sub) = 0;
 	virtual void setFont(const QString &font, const QString &enc) = 0;
@@ -38,15 +40,21 @@ public:
 		STOPPED,
 	};
 
+	Metadata *getMetadata() const;
+	void setMetadata(Metadata *value);
+	QString getVideoPath() const;
+
 protected:
-//	virtual void paintEvent(QPaintEvent *event = 0) = 0;
+	QWidget *surface;
+	Metadata *metadata;
+	QString videoPath;
 
 private:
-	QWidget *video;
 	DPMS dpms;
 
 signals:
 	void positionChanged();
+	void volumeChanged(double);
 	void stateChanged(PlayerInterface::State);
 
 public slots:

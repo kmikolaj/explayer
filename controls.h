@@ -10,14 +10,14 @@ class Controls;
 
 enum ControlElement
 {
-    Play,
-    Pause,
-    Stop,
-    PrevFrame,
-    NextFrame,
-    Open,
-    Mute,
-    Volume
+	Play,
+	Pause,
+	Stop,
+	PrevFrame,
+	NextFrame,
+	Open,
+	Mute,
+	Volume
 };
 
 class Controls : public QWidget

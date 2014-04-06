@@ -1,88 +1,100 @@
 #include "metadata.h"
 #include <QFile>
 
-MetaData::MetaData()
+Metadata::Metadata(QObject *parent)
+	: QObject(parent)
 {
-	init();
+	duration = UTime();
+	size = 0;
+	filename = "";
 }
 
-bool MetaData::getValid() const
+Metadata::~Metadata()
 {
-	return valid;
+
 }
 
-void MetaData::setValid(bool value)
+double Metadata::getFramerate(int number) const
 {
-	valid = value;
+	if (video.size() >= number && number > 0)
+		return video[number - 1].Framerate;
+	return 1.0;
 }
 
-double MetaData::getFramerate() const
-{
-	return framerate;
-}
-
-void MetaData::setFramerate(double value)
-{
-	framerate = value;
-}
-
-UTime MetaData::getDuration() const
+UTime Metadata::getDuration() const
 {
 	return duration;
 }
 
-void MetaData::setDuration(const UTime &value)
+void Metadata::setDuration(const UTime &value)
 {
 	duration = value;
 	frames = value.Frame;
 }
 
-qint32 MetaData::getFrames() const
+qint32 Metadata::getFrames() const
 {
 	return frames;
 }
 
-void MetaData::setFrames(const qint32 &value)
+void Metadata::setFrames(const qint32 &value)
 {
 	duration = UTime(value);
 	frames = value;
 }
 
-qint64 MetaData::getSize() const
+qint64 Metadata::getSize() const
 {
 	return size;
 }
 
-void MetaData::setSize(const qint64 &value)
+void Metadata::setSize(const qint64 &value)
 {
 	size = value;
 }
 
-QString MetaData::getFilename() const
+QString Metadata::getFilename() const
 {
 	return filename;
 }
 
-void MetaData::setFilename(const QString &value)
+void Metadata::setFilename(const QString &value)
 {
 	filename = value;
 }
 
-QVariantMap MetaData::getTags() const
+QMap<QString, QString> Metadata::getTags() const
 {
 	return tags;
 }
 
-void MetaData::setTags(const QVariantMap &value)
+void Metadata::addTag(const QString &tag, const QString &value)
 {
-	tags = value;
+	tags[tag] = value;
 }
 
-void MetaData::init()
+void Metadata::addVideo(const Video &stream)
 {
-	valid = false;
-	framerate = 0.0;
-	duration = UTime();
-	size = 0;
-	filename = "";
+	video.append(stream);
 }
+
+void Metadata::addAudio(const Audio &stream)
+{
+	audio.append(stream);
+}
+
+void Metadata::addSubtitles(const Subtitle &stream)
+{
+	subtitle.append(stream);
+}
+
+bool Metadata::getSeekable() const
+{
+	return seekable;
+}
+
+void Metadata::setSeekable(bool value)
+{
+	seekable = value;
+}
+

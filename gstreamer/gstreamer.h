@@ -17,14 +17,12 @@
 #include "utime.h"
 #include "osd.h"
 #include "balance.h"
-#include "metadata.h"
 
 class Gstreamer : public PlayerInterface
 {
 	Q_OBJECT
-public:
-	enum SeekFlag { None=0, Accurate=2, Skip=16 };
 
+public:
 	Gstreamer(QWidget *window);
 	~Gstreamer();
 	void setVideo(const QString &path);
@@ -48,10 +46,9 @@ public:
 	bool canSeek();
 
 protected:
-//	void paintEvent(QPaintEvent *event = 0);
+	//	void paintEvent(QPaintEvent *event = 0);
 
 private:
-	QWidget *surface;
 	GstElement *pipeline;
 #if GST_VERSION_MAJOR == 1
 	GstVideoOverlay *xoverlay;
@@ -65,17 +62,16 @@ private:
 	Osd *osd;
 	Balance *balance;
 
-	MetaData *meta;
-
-	QString video;
-	QString sub;
+	QUrl sub;
 
 	GstState state();
 	void refresh();
 
 	QUrl makeUrl(const QString &path);
 
-	void seek(const UTime &pos, SeekFlag flag = None);
+	void seek(const UTime &pos, GstSeekFlags flags = GST_SEEK_FLAG_FLUSH);
+	void setBalanceChannel(const QString &name, double value);
+	double getBalanceChannel(const QString &name) const;
 
 	static gboolean busCallback(GstBus *bus, GstMessage *msg, gpointer args);
 	static void handlePipelineStateChange(Gstreamer *gst, GstMessage *msg);
@@ -98,6 +94,7 @@ public slots:
 	void togglesubtitles();
 	void toggletime();
 	void mute();
+	void on_metadata_update();
 };
 
 #endif // GSTREAMER_H
