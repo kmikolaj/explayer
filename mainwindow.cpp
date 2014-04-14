@@ -290,29 +290,32 @@ void MainWindow::toggleeditor()
 		ui->editor->setFocus();
 	}
 }
-// FIX
+
 void MainWindow::fullScreen()
 {
 	setWindowState(windowState() ^ Qt::WindowFullScreen);
 
-//	static bool a = !settings->Gui.ControlBar;
-	static bool b = !settings->Gui.StatusBar;
-//	static bool c = !settings->Gui.Editor;
+	static bool controlBarState = !settings->Gui.ControlBar;
+	static bool statusBarState = !settings->Gui.StatusBar;
+	static bool editorState = !settings->Gui.Editor;
 
 	if (isFullScreen())
 	{
-//		a = ui->controls->isHidden();
-		b = ui->statusBar->isHidden();
-//		c = ui->editor->isHidden();
-//		ui->controls->hide();
+		controlBarState = ui->controls->isHidden();
+		statusBarState = ui->statusBar->isHidden();
+		editorState = ui->editor->isHidden();
+		ui->controls->hide();
 		ui->statusBar->hide();
-//		ui->editor->hide();
+		ui->editor->hide();
 	}
 	else
 	{
-//		if (!a) ui->controls->show();
-		if (!b) ui->statusBar->show();
-//		if (!c) ui->editor->show();
+		if (!controlBarState)
+			ui->controls->show();
+		if (!statusBarState)
+		    ui->statusBar->show();
+		if (!editorState)
+		    ui->editor->show();
 	}
 }
 

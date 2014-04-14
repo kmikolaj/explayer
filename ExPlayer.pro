@@ -36,7 +36,8 @@ SOURCES += main.cpp\
     gstreamer/balance.cpp \
     dpms.cpp \
     utime.cpp \
-    gstreamer/discoverer.cpp
+    gstreamer/discoverer.cpp \
+    videowidget.cpp
 
 HEADERS  += mainwindow.h \
     controls.h \
@@ -53,7 +54,8 @@ HEADERS  += mainwindow.h \
     gstreamer/balance.h \
     dpms.h \
     utime.h \
-    gstreamer/discoverer.h
+    gstreamer/discoverer.h \
+    videowidget.h
 
 FORMS    += mainwindow.ui \
     controls.ui \

@@ -45,9 +45,6 @@ public:
 
 	bool canSeek();
 
-protected:
-	//	void paintEvent(QPaintEvent *event = 0);
-
 private:
 	GstElement *pipeline;
 #if GST_VERSION_MAJOR == 1
@@ -69,7 +66,7 @@ private:
 
 	QUrl makeUrl(const QString &path);
 
-	void seek(const UTime &pos, GstSeekFlags flags = GST_SEEK_FLAG_FLUSH);
+	void seek(const UTime &pos, GstSeekFlags flags = GST_SEEK_FLAG_NONE);
 	void setBalanceChannel(const QString &name, double value);
 	double getBalanceChannel(const QString &name) const;
 
@@ -77,7 +74,6 @@ private:
 	static void handlePipelineStateChange(Gstreamer *gst, GstMessage *msg);
 
 signals:
-	void test();
 
 public slots:
 	void play();

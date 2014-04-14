@@ -2,8 +2,6 @@
 #define PLAYER_H
 
 #include <QWidget>
-#include <QResizeEvent>
-#include <QPaintEvent>
 #include "dpms.h"
 #include "utime.h"
 #include "metadata.h"
@@ -29,6 +27,8 @@ public:
 	virtual double brightness() const = 0;
 	virtual double contrast() const = 0;
 
+	virtual void expose() = 0;
+
 	void disableDPMS();
 	void enableDPMS();
 
@@ -47,6 +47,7 @@ public:
 protected:
 	QWidget *surface;
 	Metadata *metadata;
+	WId xwinid;
 	QString videoPath;
 
 private:

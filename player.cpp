@@ -1,7 +1,7 @@
 #include "player.h"
 
 PlayerInterface::PlayerInterface(QWidget *parent) :
-	QWidget(parent), surface(parent), metadata(nullptr)
+	QWidget(parent), surface(parent), metadata(nullptr), xwinid(0)
 {
 }
 
@@ -34,5 +34,3 @@ QString PlayerInterface::getVideoPath() const
 {
 	return videoPath;
 }
-
-

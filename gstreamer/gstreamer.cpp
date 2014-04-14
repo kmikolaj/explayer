@@ -2,7 +2,6 @@
 #include <glib.h>
 #include <QDebug>
 #include <QTimer>
-#include <QPainter>
 #include "discoverer.h"
 
 // temporary, options
@@ -27,16 +26,18 @@ Gstreamer::Gstreamer(QWidget *window)
 
 	if (pipeline)
 	{
+#if GST_VERSION_MAJOR != 1
+		// no idea why it isn't working in gst-1.0
 		osd = new Osd(pipeline, this);
 		if (hasosd)
 			osd->enable();
+#endif
 
-		WId xwinid = surface->winId();
-		if (xwinid != 0)
+		xwinid = surface->winId();
+
 #if GST_VERSION_MAJOR == 1
+		if (xwinid != 0)
 			gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
-#else
-			gst_x_overlay_set_window_handle(GST_X_OVERLAY(pipeline), xwinid);
 #endif
 
 		// add bus
@@ -58,10 +59,12 @@ Gstreamer::Gstreamer(QWidget *window)
 
 		if (hasbalance)
 			balance = new Balance(pipeline, this);
-	}
 
-//	surface->setAttribute(Qt::WA_PaintOnScreen, true);
-//	surface->setAttribute(Qt::WA_NoSystemBackground, true);
+	qDebug() << "gstreamer const setAttr";
+	setAttribute(Qt::WA_NoSystemBackground, true);
+	surface->setAttribute(Qt::WA_NoSystemBackground, true);
+
+	}
 	setHardwareAcceleration(hasharddec);
 }
 
@@ -79,6 +82,9 @@ Gstreamer::~Gstreamer()
 		g_object_unref(discoverer);
 	}
 
+//	setAttribute(Qt::WA_PaintOnScreen, false);
+//	setAttribute(Qt::WA_NoSystemBackground, false);
+
 	delete balance;
 	delete osd;
 }
@@ -89,8 +95,6 @@ void Gstreamer::setVideo(const QString &path)
 	{
 		QUrl uri = makeUrl(path);
 		videoPath = uri.toLocalFile();
-//		surface->setAttribute(Qt::WA_PaintOnScreen, true);
-//		surface->setAttribute(Qt::WA_NoSystemBackground, true);
 		g_object_set(G_OBJECT(pipeline), "uri", uri.toEncoded().data(), nullptr);
 
 		// discoverer
@@ -98,6 +102,11 @@ void Gstreamer::setVideo(const QString &path)
 		{
 			qDebug() << "discovery fail";
 		}
+	qDebug() << "setVideo setAttr";
+
+	setAttribute(Qt::WA_PaintOnScreen, true);
+
+		surface->setAttribute(Qt::WA_PaintOnScreen, true);
 	}
 }
 
@@ -122,17 +131,22 @@ void Gstreamer::setFont(const QString &font, const QString &enc)
 		g_object_set(G_OBJECT(pipeline), "subtitle-font-desc", qPrintable(font), nullptr);
 	}
 }
-// FIX
+
 void Gstreamer::setPosition(const QTime &pos)
 {
-//	if (player->metadata().getTags().containerFormat() == "ASF")
-//		player->setPosition(newPos, GST_SEEK_FLAG_ACCURATE);
-	seek(UTime(pos));
+	const QMap<QString, QString> &tags = getMetadata()->getTags();
+	bool special = false;
+	if (tags.contains("container-format"))
+	{
+		if (tags["container-format"] == "ASF")
+			special = true;
+	}
+	special ? seek(UTime(pos), GST_SEEK_FLAG_ACCURATE) : seek(UTime(pos));
 }
 
 void Gstreamer::setPosition(const qint32 frame)
 {
-	seek(UTime(frame), GstSeekFlags(GST_SEEK_FLAG_ACCURATE | GST_SEEK_FLAG_SKIP | GST_SEEK_FLAG_FLUSH));
+	seek(UTime(frame), GstSeekFlags(GST_SEEK_FLAG_ACCURATE | GST_SEEK_FLAG_SKIP));
 }
 
 GstState Gstreamer::state()
@@ -176,6 +190,16 @@ gboolean Gstreamer::busCallback(GstBus *bus, GstMessage *msg, gpointer args)
 	}
 	case GST_MESSAGE_ELEMENT:
 	{
+#if GST_VERSION_MAJOR != 1
+		if (gst_structure_has_name(gst_message_get_structure(msg), "prepare-xwindow-id"))
+	    {
+	        if (gst->xwinid != 0)
+	        {
+	            gst->xoverlay = GST_X_OVERLAY(GST_MESSAGE_SRC(msg));
+	            gst_x_overlay_set_window_handle(gst->xoverlay, gst->xwinid);
+	        }
+	    }
+#endif
 		break;
 	}
 	case GST_MESSAGE_EOS:
@@ -223,11 +247,11 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 	case GST_STATE_NULL:
 		gst->positionTimer.stop();
 		emit gst->stateChanged(STOPPED);
+		gst->refresh();
 		break;
 	default:
 		break;
 	}
-	// if new == nullptr releasesink()
 }
 
 void Gstreamer::setHardwareAcceleration(bool enable)
@@ -251,18 +275,11 @@ bool Gstreamer::canSeek()
 	return (currentState != GST_STATE_READY && currentState != GST_STATE_NULL);
 }
 
-/*
-void Gstreamer::paintEvent(QPaintEvent *event)
-{
-	setVideoArea(surface->rect());
-	expose();
-}
-*/
-
 void Gstreamer::refresh()
 {
-	surface->setAttribute(Qt::WA_PaintOnScreen, false);
-	surface->setAttribute(Qt::WA_NoSystemBackground, false);
+//	surface->setAttribute(Qt::WA_PaintOnScreen, false);
+	qDebug() << "REFRESH";
+//	surface->setAttribute(Qt::WA_NoSystemBackground, false);
 }
 
 QUrl Gstreamer::makeUrl(const QString &path)
@@ -329,7 +346,8 @@ void Gstreamer::stop()
 	if (pipeline)
 	{
 		gst_element_set_state(pipeline, GST_STATE_NULL);
-		refresh();
+//		setAttribute(Qt::WA_PaintOnScreen, false);
+//		surface->setAttribute(Qt::WA_PaintOnScreen, false);
 		emit stateChanged(STOPPED);
 	}
 }
@@ -576,9 +594,9 @@ void Gstreamer::expose()
 		}
 #endif
 	}
-	else
-	{
-		QPainter p(surface);
-		p.fillRect(surface->rect(), Qt::black);
-	}
+//	else
+//	{
+//		QPainter p(this);
+//		p.fillRect(rect(), Qt::black);
+//	}
 }

@@ -42,7 +42,7 @@ Settings::~Settings()
 void Settings::setDefault()
 {
 	// video
-	Video.Output = "xv";
+	Video.Output = "gstreamer";
 	Video.VAAPI = false;
 	Video.ForceAspectRatio = true;
 	Video.PixelAspectRatio = 1.0;
