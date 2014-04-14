@@ -12,6 +12,7 @@ class VideoWidget : public QWidget
 	Q_OBJECT
 public:
 	explicit VideoWidget(QWidget *parent = 0);
+
 protected:
 	void paintEvent(QPaintEvent *event);
 

@@ -6,7 +6,7 @@
 #include "utime.h"
 #include "metadata.h"
 
-class PlayerInterface : public QWidget
+class PlayerInterface : public QObject
 {
 	Q_OBJECT
 public:

@@ -235,7 +235,7 @@ void MainWindow::stateUpdate(PlayerInterface::State state)
 	switch (state)
 	{
 	case PlayerInterface::STOPPED:
-		player->update();
+		ui->video->update();
 		ui->controls->onStateStopped();
 		positionUpdate();
 		break;

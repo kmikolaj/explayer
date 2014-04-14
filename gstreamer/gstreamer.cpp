@@ -61,8 +61,8 @@ Gstreamer::Gstreamer(QWidget *window)
 			balance = new Balance(pipeline, this);
 
 	qDebug() << "gstreamer const setAttr";
-	setAttribute(Qt::WA_NoSystemBackground, true);
-	surface->setAttribute(Qt::WA_NoSystemBackground, true);
+//	surface->setAttribute(Qt::WA_NoSystemBackground, true);
+//	surface->setAttribute(Qt::WA_PaintOnScreen, true);
 
 	}
 	setHardwareAcceleration(hasharddec);
@@ -82,8 +82,8 @@ Gstreamer::~Gstreamer()
 		g_object_unref(discoverer);
 	}
 
-//	setAttribute(Qt::WA_PaintOnScreen, false);
-//	setAttribute(Qt::WA_NoSystemBackground, false);
+	surface->setAttribute(Qt::WA_PaintOnScreen, false);
+	surface->setAttribute(Qt::WA_NoSystemBackground, false);
 
 	delete balance;
 	delete osd;
@@ -102,11 +102,8 @@ void Gstreamer::setVideo(const QString &path)
 		{
 			qDebug() << "discovery fail";
 		}
-	qDebug() << "setVideo setAttr";
-
-	setAttribute(Qt::WA_PaintOnScreen, true);
-
-		surface->setAttribute(Qt::WA_PaintOnScreen, true);
+		qDebug() << "setVideo setAttr";
+//		surface->setAttribute(Qt::WA_PaintOnScreen, true);
 	}
 }
 
@@ -346,7 +343,6 @@ void Gstreamer::stop()
 	if (pipeline)
 	{
 		gst_element_set_state(pipeline, GST_STATE_NULL);
-//		setAttribute(Qt::WA_PaintOnScreen, false);
 //		surface->setAttribute(Qt::WA_PaintOnScreen, false);
 		emit stateChanged(STOPPED);
 	}
@@ -405,7 +401,7 @@ void Gstreamer::forceaspectratio()
 		{
 			osd->setText("ignore aspect ratio");
 		}
-		update();
+		surface->update();
 	}
 }
 
