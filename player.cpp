@@ -32,5 +32,5 @@ void PlayerInterface::setMetadata(Metadata *value)
 
 QString PlayerInterface::getVideoPath() const
 {
-	return videoPath;
+	return metadata->getFilename();
 }

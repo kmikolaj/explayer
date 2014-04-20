@@ -38,6 +38,9 @@ Gstreamer::Gstreamer(QWidget *window)
 #if GST_VERSION_MAJOR == 1
 		if (xwinid != 0)
 			gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
+#else
+		if (hasharddec && xwinid != 0)
+			gst_x_overlay_set_window_handle(GST_X_OVERLAY(pipeline), xwinid);
 #endif
 
 		// add bus
@@ -94,7 +97,6 @@ void Gstreamer::setVideo(const QString &path)
 	if (pipeline)
 	{
 		QUrl uri = makeUrl(path);
-		videoPath = uri.toLocalFile();
 		g_object_set(G_OBJECT(pipeline), "uri", uri.toEncoded().data(), nullptr);
 
 		// discoverer
@@ -227,6 +229,7 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 		if (old_state == GST_STATE_PLAYING)
 		{
 			gst->positionTimer.stop();
+			emit gst->positionChanged();
 		}
 		else if (old_state == GST_STATE_READY)
 		{
@@ -413,12 +416,12 @@ void Gstreamer::togglesubtitles()
 	{
 		if (subtitles)
 		{
-//			osd->setText("no subtitles");
+			osd->setText("no subtitles");
 			g_object_set(G_OBJECT(pipeline), "suburi", nullptr, nullptr);
 		}
 		else
 		{
-//			osd->setText("subtitles");
+			osd->setText("subtitles");
 			g_object_set(G_OBJECT(pipeline), "suburi", sub.toEncoded().data(), nullptr);
 		}
 		subtitles = !subtitles;
@@ -453,6 +456,7 @@ void Gstreamer::mute()
 void Gstreamer::on_metadata_update()
 {
 	UTime::setFps(getMetadata()->getFramerate(1));
+	emit videoChanged();
 }
 
 UTime Gstreamer::position() const

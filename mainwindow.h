@@ -44,39 +44,21 @@ private:
 	QVector<QShortcut *> hotkeys;
 	JumpDialog *jumper;
 	QString url;
-	PlayerInterface *player;
-
-	void seek(int seconds);
-	void gotoFrame(qint32 frame, bool pause = false);
-	void gotoTime(const QTime &time, bool pause = false);
-	void updateStatus(const UTime &position, const UTime &length);
+	QString videoPath;
+	UTime length;
 
 public slots:
-	void positionUpdate();
+	void positionUpdate(UTime);
 	void volumeUpdate(double);
 	void stateUpdate(PlayerInterface::State);
 	void open();
 	void play();
 	void play(QString);
-	void toggleeditor();
+	void toggleEditor();
 	void fullScreen();
-	void seekForward();
-	void seekBackward();
-	void seekFrame(qint32);
-	void nextFrame();
-	void prevFrame();
-	void volumeUp();
-	void volumeDown();
-	void hueUp();
-	void hueDown();
-	void saturationUp();
-	void saturationDown();
-	void brightnessUp();
-	void brightnessDown();
-	void contrastUp();
-	void contrastDown();
 	void frameJump();
 	void timeJump();
+	void videoUpdate();
 };
 
 #endif // MAINWINDOW_H

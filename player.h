@@ -48,7 +48,6 @@ protected:
 	QWidget *surface;
 	Metadata *metadata;
 	WId xwinid;
-	QString videoPath;
 
 private:
 	DPMS dpms;
@@ -57,6 +56,7 @@ signals:
 	void positionChanged();
 	void volumeChanged(double);
 	void stateChanged(PlayerInterface::State);
+	void videoChanged();
 
 public slots:
 	virtual void play() = 0;

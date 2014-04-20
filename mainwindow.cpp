@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "utils.h"
 #include <QFileDialog>
+#include "utils.h"
 #include "gstreamer/gstreamer.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -11,54 +11,55 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->setupUi(this);
 
 	settings = Settings::GetSettings(this);
-	player = new Gstreamer(ui->video);
+	ui->video->createRenderer(settings->Video.Output);
 
 	// Video Widget
-	connect(player, SIGNAL(positionChanged()), this, SLOT(positionUpdate()));
-	connect(player, SIGNAL(volumeChanged(double)), this, SLOT(volumeUpdate(double)));
-	connect(player, SIGNAL(stateChanged(PlayerInterface::State)), this, SLOT(stateUpdate(PlayerInterface::State)));
+	connect(ui->video, SIGNAL(positionChanged(UTime)), this, SLOT(positionUpdate(UTime)));
+	connect(ui->video, SIGNAL(volumeChanged(double)), this, SLOT(volumeUpdate(double)));
+	connect(ui->video, SIGNAL(stateChanged(PlayerInterface::State)), this, SLOT(stateUpdate(PlayerInterface::State)));
+	connect(ui->video, SIGNAL(videoChanged()), this, SLOT(videoUpdate()));
 
 	// Controls Widget
-	connect(ui->controls, SIGNAL(play()), player, SLOT(play()));
-	connect(ui->controls, SIGNAL(pause()), player, SLOT(pause()));
-	connect(ui->controls, SIGNAL(stop()), player, SLOT(stop()));
 	connect(ui->controls, SIGNAL(open()), this, SLOT(open()));
-	connect(ui->controls, SIGNAL(nextFrame()), this, SLOT(nextFrame()));
-	connect(ui->controls, SIGNAL(prevFrame()), this, SLOT(prevFrame()));
-	connect(ui->controls, SIGNAL(volumeChanged(double)), player, SLOT(setVolume(double)));
+	connect(ui->controls, SIGNAL(play()), ui->video, SLOT(play()));
+	connect(ui->controls, SIGNAL(pause()), ui->video, SLOT(pause()));
+	connect(ui->controls, SIGNAL(stop()), ui->video, SLOT(stop()));
+	connect(ui->controls, SIGNAL(nextFrame()), ui->video, SLOT(nextFrame()));
+	connect(ui->controls, SIGNAL(prevFrame()), ui->video, SLOT(prevFrame()));
+	connect(ui->controls, SIGNAL(volumeChanged(double)), ui->video, SLOT(setVolume(double)));
 
 	// Editor Widget
-	connect(ui->editor, SIGNAL(hideWindow()), this, SLOT(toggleeditor()));
-	connect(ui->editor, SIGNAL(jump(qint32)), this, SLOT(seekFrame(qint32)));
+	connect(ui->editor, SIGNAL(hideWindow()), this, SLOT(toggleEditor()));
+	connect(ui->editor, SIGNAL(jump(qint32)), ui->video, SLOT(seekFrame(qint32)));
 
 	// hotkeys
-	addHotkey(settings->KeysPlayer.PlayPause, player, SLOT(toggle()));
-	addHotkey(settings->KeysPlayer.Stop, player, SLOT(stop()));
+	addHotkey(settings->KeysPlayer.PlayPause, ui->video, SLOT(toggle()));
+	addHotkey(settings->KeysPlayer.Stop, ui->video, SLOT(stop()));
 	addHotkey(settings->KeysPlayer.FullScreen, this, SLOT(fullScreen()));
-	addHotkey(settings->KeysPlayer.Editor, this, SLOT(toggleeditor()));
-	addHotkey(settings->KeysPlayer.Subtitles, player, SLOT(togglesubtitles()));
-	addHotkey(settings->KeysPlayer.AspectRatio, player, SLOT(forceaspectratio()));
-	addHotkey(settings->KeysPlayer.SeekForward, this, SLOT(seekForward()));
-	addHotkey(settings->KeysPlayer.SeekBackward, this, SLOT(seekBackward()));
-	addHotkey(settings->KeysPlayer.VolumeUp, this, SLOT(volumeUp()));
-	addHotkey(settings->KeysPlayer.VolumeDown, this, SLOT(volumeDown()));
+	addHotkey(settings->KeysPlayer.Editor, this, SLOT(toggleEditor()));
+	addHotkey(settings->KeysPlayer.Subtitles, ui->video, SLOT(toggleSubtitles()));
+	addHotkey(settings->KeysPlayer.AspectRatio, ui->video, SLOT(toggleAspectRatio()));
+	addHotkey(settings->KeysPlayer.SeekForward, ui->video, SLOT(seekForward()));
+	addHotkey(settings->KeysPlayer.SeekBackward, ui->video, SLOT(seekBackward()));
+	addHotkey(settings->KeysPlayer.VolumeUp, ui->video, SLOT(volumeUp()));
+	addHotkey(settings->KeysPlayer.VolumeDown, ui->video, SLOT(volumeDown()));
 	addHotkey(settings->KeysPlayer.FrameJump, this, SLOT(frameJump()));
 	addHotkey(settings->KeysPlayer.TimeJump, this, SLOT(timeJump()));
-	addHotkey(settings->KeysPlayer.NextFrame, this, SLOT(nextFrame()));
-	addHotkey(settings->KeysPlayer.PrevFrame, this, SLOT(prevFrame()));
-	addHotkey(settings->KeysPlayer.Time, player, SLOT(toggletime()));
-	addHotkey(settings->KeysPlayer.HueUp, this, SLOT(hueUp()));
-	addHotkey(settings->KeysPlayer.HueDown, this, SLOT(hueDown()));
-	addHotkey(settings->KeysPlayer.SaturationUp, this, SLOT(saturationUp()));
-	addHotkey(settings->KeysPlayer.SaturationDown, this, SLOT(saturationDown()));
-	addHotkey(settings->KeysPlayer.BrightnessUp, this, SLOT(brightnessUp()));
-	addHotkey(settings->KeysPlayer.BrightnessDown, this, SLOT(brightnessDown()));
-	addHotkey(settings->KeysPlayer.ContrastUp, this, SLOT(contrastUp()));
-	addHotkey(settings->KeysPlayer.ContrastDown, this, SLOT(contrastDown()));
+	addHotkey(settings->KeysPlayer.NextFrame, ui->video, SLOT(nextFrame()));
+	addHotkey(settings->KeysPlayer.PrevFrame, ui->video, SLOT(prevFrame()));
+	addHotkey(settings->KeysPlayer.Time, ui->video, SLOT(toggleTime()));
+	addHotkey(settings->KeysPlayer.HueUp, ui->video, SLOT(hueUp()));
+	addHotkey(settings->KeysPlayer.HueDown, ui->video, SLOT(hueDown()));
+	addHotkey(settings->KeysPlayer.SaturationUp, ui->video, SLOT(saturationUp()));
+	addHotkey(settings->KeysPlayer.SaturationDown, ui->video, SLOT(saturationDown()));
+	addHotkey(settings->KeysPlayer.BrightnessUp, ui->video, SLOT(brightnessUp()));
+	addHotkey(settings->KeysPlayer.BrightnessDown, ui->video, SLOT(brightnessDown()));
+	addHotkey(settings->KeysPlayer.ContrastUp, ui->video, SLOT(contrastUp()));
+	addHotkey(settings->KeysPlayer.ContrastDown, ui->video, SLOT(contrastDown()));
 
 	{
 		QMap<const char *, const QObject *> slot;
-		slot.insert(SLOT(mute()), player);
+		slot.insert(SLOT(toggleMute()), ui->video);
 		slot.insert(SLOT(toggleMute()), ui->controls);
 		addHotkey(settings->KeysPlayer.Mute, slot);
 	}
@@ -66,12 +67,9 @@ MainWindow::MainWindow(QWidget *parent) :
 	// jumper dialog
 	jumper = new JumpDialog(this);
 
-	// opener dialog
-	// opener = new OpenDialog(this);
-
 	// on start
 	ui->controls->onStateStopped();
-	positionUpdate();
+	positionUpdate(UTime());
 }
 
 MainWindow::~MainWindow()
@@ -107,19 +105,19 @@ void MainWindow::playFile(const QString &url)
 	QFile subtitles(subfilename);
 	if (film.exists())
 	{
-		player->stop();
-		player->setVideo(url);
+		ui->video->stop();
+		ui->video->setVideo(url);
 		if (subtitles.exists())
 		{
-			player->setSubtitles(subfilename);
-			player->setFont(settings->Subtitles.Font, settings->Subtitles.Encoding);
+			ui->video->setSubtitles(subfilename);
+			ui->video->setSubtitlesFont(settings->Subtitles.Font, settings->Subtitles.Encoding);
 			ui->editor->loadSubtitles(subfilename);
 		}
 
 		if (settings->Gui.RememberPosition)
-			player->play(settings->getPosition(url));
+			ui->video->play(settings->getPosition(url));
 		else
-			player->play();
+			ui->video->play();
 	}
 }
 
@@ -128,9 +126,9 @@ void MainWindow::playUrl(const QString &url)
 	QUrl uri(url);
 	if (uri.isValid())
 	{
-		player->stop();
-		player->setVideo(uri.toString());
-		player->play();
+		ui->video->stop();
+		ui->video->setVideo(uri.toString());
+		ui->video->play();
 	}
 }
 
@@ -167,62 +165,14 @@ void MainWindow::changeEvent(QEvent *event)
 	QMainWindow::changeEvent(event);
 }
 
-void MainWindow::seek(int seconds)
-{
-	UTime newPos = player->position();
-	newPos.moveNsec(seconds * GST_SECOND);
-	player->setPosition(newPos.Time);
-	updateStatus(newPos, player->duration());
-}
-
-void MainWindow::gotoFrame(qint32 frame, bool pause)
-{
-	if (player->canSeek())
-	{
-		if (player->duration().Time > QTime(0, 0))
-		{
-			player->setPosition(frame);
-			updateStatus(UTime(frame), player->duration());
-			if (pause)
-				player->pause();
-		}
-	}
-}
-
-void MainWindow::gotoTime(const QTime &time, bool pause)
-{
-	if (player->canSeek())
-	{
-		if (player->duration().Time > QTime(0, 0))
-		{
-			player->setPosition(time);
-			updateStatus(UTime(time), player->duration());
-			if (pause)
-				player->pause();
-		}
-	}
-}
-
-void MainWindow::updateStatus(const UTime &position, const UTime &length)
+void MainWindow::positionUpdate(UTime position)
 {
 	QString message;
 	message = position.Time.toString("hh:mm:ss.zzz") + "/" + length.Time.toString("hh:mm:ss.zzz");
 	message += "\tFrame: " + QString::number(position.Frame);
-	message += "\tName: " + player->getVideoPath();
+	message += "\tName: " + videoPath;
 
 	ui->statusBar->showMessage(message);
-}
-
-void MainWindow::positionUpdate()
-{
-	UTime pos, len;
-
-	if (player->canSeek())
-	{
-		pos = player->position();
-		len = player->duration();
-	}
-	updateStatus(pos, len);
 }
 
 void MainWindow::volumeUpdate(double volume)
@@ -237,11 +187,9 @@ void MainWindow::stateUpdate(PlayerInterface::State state)
 	case PlayerInterface::STOPPED:
 		ui->video->update();
 		ui->controls->onStateStopped();
-		positionUpdate();
 		break;
 	case PlayerInterface::PAUSED:
 		ui->controls->onStatePaused();
-		positionUpdate();
 		break;
 	case PlayerInterface::PLAYING:
 		ui->controls->onStatePlaying();
@@ -277,7 +225,7 @@ void MainWindow::play(QString video)
 	}
 }
 
-void MainWindow::toggleeditor()
+void MainWindow::toggleEditor()
 {
 	if (ui->editor->isVisible())
 	{
@@ -319,106 +267,6 @@ void MainWindow::fullScreen()
 	}
 }
 
-void MainWindow::seekForward()
-{
-	if (player->canSeek())
-	{
-		seek(settings->Video.SeekShort);
-	}
-}
-
-void MainWindow::seekBackward()
-{
-	if (player->canSeek())
-	{
-		seek(-1 * settings->Video.SeekShort);
-	}
-}
-
-void MainWindow::seekFrame(qint32 frame)
-{
-	if (player->canSeek())
-	{
-		gotoFrame(frame, false);
-	}
-}
-
-void MainWindow::nextFrame()
-{
-	if (player->canSeek())
-	{
-		gotoFrame(player->position().Frame + 1, true);
-	}
-}
-
-void MainWindow::prevFrame()
-{
-	if (player->canSeek())
-	{
-		gotoFrame(player->position().Frame - 1, true);
-	}
-}
-
-void MainWindow::volumeUp()
-{
-	double value = player->volume();
-	player->setVolume(value + 0.05);
-}
-
-void MainWindow::volumeDown()
-{
-	double value = player->volume();
-	player->setVolume(value - 0.05);
-}
-
-void MainWindow::hueUp()
-{
-	double value = player->hue();
-	player->setHue(value + 0.1);
-}
-
-void MainWindow::hueDown()
-{
-	double value = player->hue();
-	player->setHue(value - 0.1);
-}
-
-void MainWindow::saturationUp()
-{
-	double value = player->saturation();
-	player->setSaturation(value + 0.1);
-}
-
-void MainWindow::saturationDown()
-{
-	double value = player->saturation();
-	player->setSaturation(value - 0.1);
-}
-
-void MainWindow::brightnessUp()
-{
-	double value = player->brightness();
-	player->setBrightness(value + 0.1);
-}
-
-void MainWindow::brightnessDown()
-{
-	double value = player->brightness();
-	player->setBrightness(value - 0.1);
-}
-
-void MainWindow::contrastUp()
-{
-	double value = player->contrast();
-	player->setContrast(value + 0.1);
-}
-
-void MainWindow::contrastDown()
-{
-	double value = player->contrast();
-	player->setContrast(value - 0.1);
-}
-
 void MainWindow::frameJump()
 {
 	qint32 position;
@@ -426,7 +274,7 @@ void MainWindow::frameJump()
 	if (jumper->exec())
 	{
 		position = jumper->getInput().toInt();
-		gotoFrame(position, true);
+		ui->video->gotoFrame(position, true);
 	}
 }
 
@@ -437,6 +285,12 @@ void MainWindow::timeJump()
 	if (jumper->exec())
 	{
 		position = QTime::fromString(jumper->getInput(), "h:m:s");
-		gotoTime(position, true);
+		ui->video->gotoTime(position, true);
 	}
+}
+
+void MainWindow::videoUpdate()
+{
+	videoPath = ui->video->getVideoPath();
+	length = ui->video->getDuration();
 }
