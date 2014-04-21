@@ -1,5 +1,6 @@
 #include "videowidget.h"
 #include "gstreamer/gstreamer.h"
+#include <QDebug>
 // FIX if player
 VideoWidget::VideoWidget(QWidget *parent) :
     QWidget(parent), player(nullptr)
@@ -29,6 +30,7 @@ bool VideoWidget::hasRenderer()
 
 void VideoWidget::paintEvent(QPaintEvent *event)
 {
+	qDebug() << event->rect();
 	QPainter p(this);
 	p.fillRect(event->rect(), Qt::black);
 }

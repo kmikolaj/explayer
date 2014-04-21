@@ -105,7 +105,7 @@ void Gstreamer::setVideo(const QString &path)
 			qDebug() << "discovery fail";
 		}
 		qDebug() << "setVideo setAttr";
-//		surface->setAttribute(Qt::WA_PaintOnScreen, true);
+		surface->setAttribute(Qt::WA_PaintOnScreen, true);
 	}
 }
 
@@ -346,7 +346,7 @@ void Gstreamer::stop()
 	if (pipeline)
 	{
 		gst_element_set_state(pipeline, GST_STATE_NULL);
-//		surface->setAttribute(Qt::WA_PaintOnScreen, false);
+		surface->setAttribute(Qt::WA_PaintOnScreen, false);
 		emit stateChanged(STOPPED);
 	}
 }
@@ -404,6 +404,7 @@ void Gstreamer::forceaspectratio()
 		{
 			osd->setText("ignore aspect ratio");
 		}
+		// set video ?
 		surface->update();
 	}
 }
