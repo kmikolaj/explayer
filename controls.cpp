@@ -89,7 +89,7 @@ void Controls::toggleMute()
 	}
 	else
 	{
-		ui->muteButton->setIcon(QIcon::fromTheme("audio-volume-normal"));
+		on_volumeSlider_valueChanged(ui->volumeSlider->value());
 	}
 }
 
@@ -152,4 +152,16 @@ void Controls::on_openButton_clicked()
 void Controls::on_volumeSlider_sliderMoved(int position)
 {
 	emit volumeChanged(double(position) / 100.0);
+}
+
+void Controls::on_volumeSlider_valueChanged(int value)
+{
+	if (value < 1)
+		ui->muteButton->setIcon(QIcon::fromTheme("audio-volume-muted"));
+	else if (value < 34)
+		ui->muteButton->setIcon(QIcon::fromTheme("audio-volume-low"));
+	else if (value < 67)
+		ui->muteButton->setIcon(QIcon::fromTheme("audio-volume-medium"));
+	else
+		ui->muteButton->setIcon(QIcon::fromTheme("audio-volume-high"));
 }

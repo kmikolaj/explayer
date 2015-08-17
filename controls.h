@@ -51,6 +51,7 @@ private slots:
 	void on_nextFrameButton_clicked();
 	void on_openButton_clicked();
 	void on_volumeSlider_sliderMoved(int position);
+	void on_volumeSlider_valueChanged(int value);
 
 private:
 	Ui::Controls *ui;

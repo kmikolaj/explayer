@@ -229,7 +229,9 @@ QToolButton:flat
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset theme="audio-volume-normal"/>
+      <iconset theme="audio-volume-medium">
+       <normaloff/>
+      </iconset>
      </property>
     </widget>
    </item>
