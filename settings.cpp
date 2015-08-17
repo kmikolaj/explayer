@@ -2,13 +2,9 @@
 #include <QDir>
 #include <QTextStream>
 
-Settings *Settings::GetSettings(QObject *parent)
+Settings &Settings::GetInstance()
 {
-	static Settings *settings = nullptr;
-	if (!settings)
-	{
-		settings = new Settings(parent);
-	}
+	static Settings settings;
 	return settings;
 }
 
@@ -134,7 +130,7 @@ void Settings::saveLastPositions()
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text))
 	{
 		QTextStream stream(&file);
-		foreach(const QString & name, Gui.LastPosition.keys())
+		foreach (const QString &name, Gui.LastPosition.keys())
 		{
 			stream << name << "=" << Gui.LastPosition[name].toString();
 		}

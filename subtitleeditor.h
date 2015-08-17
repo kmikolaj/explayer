@@ -1,7 +1,6 @@
 #ifndef SUBTITLEEDITOR_H
 #define SUBTITLEEDITOR_H
 
-#include "settings.h"
 #include "player.h"
 #include <QPlainTextEdit>
 
@@ -19,7 +18,6 @@ protected:
 	virtual void showEvent(QShowEvent *);
 
 private:
-	Settings *settings;
 	PlayerInterface *player;
 	QMap<qint32, int> startFrames;
 	void highlightLine(int line = -1);

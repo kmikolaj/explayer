@@ -9,7 +9,7 @@
 class Settings : public QObject
 {
 public:
-	static Settings *GetSettings(QObject *parent = 0);
+	static Settings& GetInstance();
 
 	struct
 	{
@@ -92,6 +92,9 @@ public:
 private:
 	Settings(QObject *parent = 0);
 	~Settings();
+
+	Settings(Settings const& copy);
+    Settings& operator=(Settings const& copy);
 
 	void setDefault();
 	void readLastPositions();

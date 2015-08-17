@@ -1,5 +1,6 @@
 #include "subtitleeditor.h"
 #include "utils.h"
+#include "settings.h"
 #include <QTextStream>
 #include <QTextCodec>
 #include <QTextBlock>
@@ -13,8 +14,8 @@ SubtitleEditor::SubtitleEditor(QWidget *parent) :
 	connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(on_cursorPositionChanged()));
 	connect(this, SIGNAL(save()), this, SLOT(on_save()));
 	setFont(QFont("monospace"));
-	settings = Settings::GetSettings(this);
-	if (!settings->Gui.Editor)
+	Settings &settings = Settings::GetInstance();
+	if (!settings.Gui.Editor)
 		hide();
 }
 
@@ -23,7 +24,8 @@ void SubtitleEditor::saveSubtitles(const QString &filename)
 	QFile file(filename);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text))
 	{
-		QTextCodec *codec = QTextCodec::codecForName(settings->Subtitles.Encoding.toLocal8Bit());
+		Settings &settings = Settings::GetInstance();
+		QTextCodec *codec = QTextCodec::codecForName(settings.Subtitles.Encoding.toLocal8Bit());
 		QTextStream stream(&file);
 		stream.setCodec(codec);
 		stream << toPlainText();
@@ -43,7 +45,8 @@ void SubtitleEditor::loadSubtitles(const QString &filename)
 		subFilename = filename;
 		startFrames.clear();
 		int i = 0;
-		QTextCodec *codec = QTextCodec::codecForName(settings->Subtitles.Encoding.toLocal8Bit());
+		Settings &settings = Settings::GetInstance();
+		QTextCodec *codec = QTextCodec::codecForName(settings.Subtitles.Encoding.toLocal8Bit());
 		QTextStream stream(&file);
 		stream.setCodec(codec);
 		while (!stream.atEnd())
@@ -61,35 +64,38 @@ void SubtitleEditor::keyPressEvent(QKeyEvent *e)
 {
 	QKeySequence sequence(e->key() | int(e->modifiers()));
 	qint32 frame;
-	if (sequence == settings->KeysPlayer.Editor)
+	Settings &settings = Settings::GetInstance();
+	if (sequence == settings.KeysPlayer.Editor)
 	{
 		emit hideWindow();
 	}
-	else if (sequence == settings->KeysEditor.JumpToSub)
+	else if (sequence == settings.KeysEditor.JumpToSub)
 	{
 		if (extractFrame(frame, textCursor().block().text()))
 			emit jump(frame);
 	}
-	else if (sequence == settings->KeysEditor.ReplaceStartFrame)
+	else if (sequence == settings.KeysEditor.ReplaceStartFrame)
 	{
 		if (currentFrame(frame))
 		{
 			replace("\\{(\\d+)\\}", QString::number(frame), 1);
 		}
 	}
-	else if (sequence == settings->KeysEditor.ReplaceEndFrame)
+	else if (sequence == settings.KeysEditor.ReplaceEndFrame)
 	{
 		if (currentFrame(frame))
 		{
 			replace("\\{(\\d+)\\}", QString::number(frame), 2);
 		}
 	}
-	else if (sequence == settings->KeysEditor.SaveSub)
+	else if (sequence == settings.KeysEditor.SaveSub)
 	{
 		emit save();
 	}
 	else
+	{
 		QPlainTextEdit::keyPressEvent(e);
+	}
 }
 
 void SubtitleEditor::showEvent(QShowEvent *e)

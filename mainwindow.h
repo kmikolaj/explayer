@@ -39,7 +39,6 @@ protected:
 
 private:
 	Ui::MainWindow *ui;
-	Settings *settings;
 	QString movieDir;
 	QVector<QShortcut *> hotkeys;
 	JumpDialog *jumper;
@@ -58,6 +57,8 @@ public slots:
 	void fullScreen();
 	void frameJump();
 	void timeJump();
+	void seekBackward();
+	void seekForward();
 	void videoUpdate();
 };
 

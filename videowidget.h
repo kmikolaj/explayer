@@ -6,7 +6,6 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include "player.h"
-#include "settings.h"
 
 class VideoWidget : public QWidget
 {
@@ -28,10 +27,11 @@ public:
 
 protected:
 	void paintEvent(QPaintEvent *event);
+	void resizeEvent(QResizeEvent *event);
+	void showEvent(QShowEvent *event);
 
 private:
 	PlayerInterface *player;
-	Settings *settings;
 
 signals:
 	void videoChanged();
@@ -49,9 +49,9 @@ public slots:
 	void stop();
 	void nextFrame();
 	void prevFrame();
-	void seekForward();
-	void seekBackward();
-	void seekFrame(qint32);
+	void seekForward(int range);
+	void seekBackward(int range);
+	void seekFrame(qint32 frame);
 	void setVolume(double volume);
 	void volumeUp();
 	void volumeDown();

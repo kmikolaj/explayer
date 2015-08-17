@@ -10,8 +10,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	settings = Settings::GetSettings(this);
-	ui->video->createRenderer(settings->Video.Output);
+	Settings &settings = Settings::GetInstance();
+	ui->video->createRenderer(settings.Video.Output);
 
 	// Video Widget
 	connect(ui->video, SIGNAL(positionChanged(UTime)), this, SLOT(positionUpdate(UTime)));
@@ -33,35 +33,35 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect(ui->editor, SIGNAL(jump(qint32)), ui->video, SLOT(seekFrame(qint32)));
 
 	// hotkeys
-	addHotkey(settings->KeysPlayer.PlayPause, ui->video, SLOT(toggle()));
-	addHotkey(settings->KeysPlayer.Stop, ui->video, SLOT(stop()));
-	addHotkey(settings->KeysPlayer.FullScreen, this, SLOT(fullScreen()));
-	addHotkey(settings->KeysPlayer.Editor, this, SLOT(toggleEditor()));
-	addHotkey(settings->KeysPlayer.Subtitles, ui->video, SLOT(toggleSubtitles()));
-	addHotkey(settings->KeysPlayer.AspectRatio, ui->video, SLOT(toggleAspectRatio()));
-	addHotkey(settings->KeysPlayer.SeekForward, ui->video, SLOT(seekForward()));
-	addHotkey(settings->KeysPlayer.SeekBackward, ui->video, SLOT(seekBackward()));
-	addHotkey(settings->KeysPlayer.VolumeUp, ui->video, SLOT(volumeUp()));
-	addHotkey(settings->KeysPlayer.VolumeDown, ui->video, SLOT(volumeDown()));
-	addHotkey(settings->KeysPlayer.FrameJump, this, SLOT(frameJump()));
-	addHotkey(settings->KeysPlayer.TimeJump, this, SLOT(timeJump()));
-	addHotkey(settings->KeysPlayer.NextFrame, ui->video, SLOT(nextFrame()));
-	addHotkey(settings->KeysPlayer.PrevFrame, ui->video, SLOT(prevFrame()));
-	addHotkey(settings->KeysPlayer.Time, ui->video, SLOT(toggleTime()));
-	addHotkey(settings->KeysPlayer.HueUp, ui->video, SLOT(hueUp()));
-	addHotkey(settings->KeysPlayer.HueDown, ui->video, SLOT(hueDown()));
-	addHotkey(settings->KeysPlayer.SaturationUp, ui->video, SLOT(saturationUp()));
-	addHotkey(settings->KeysPlayer.SaturationDown, ui->video, SLOT(saturationDown()));
-	addHotkey(settings->KeysPlayer.BrightnessUp, ui->video, SLOT(brightnessUp()));
-	addHotkey(settings->KeysPlayer.BrightnessDown, ui->video, SLOT(brightnessDown()));
-	addHotkey(settings->KeysPlayer.ContrastUp, ui->video, SLOT(contrastUp()));
-	addHotkey(settings->KeysPlayer.ContrastDown, ui->video, SLOT(contrastDown()));
+	addHotkey(settings.KeysPlayer.PlayPause, ui->video, SLOT(toggle()));
+	addHotkey(settings.KeysPlayer.Stop, ui->video, SLOT(stop()));
+	addHotkey(settings.KeysPlayer.FullScreen, this, SLOT(fullScreen()));
+	addHotkey(settings.KeysPlayer.Editor, this, SLOT(toggleEditor()));
+	addHotkey(settings.KeysPlayer.Subtitles, ui->video, SLOT(toggleSubtitles()));
+	addHotkey(settings.KeysPlayer.AspectRatio, ui->video, SLOT(toggleAspectRatio()));
+	addHotkey(settings.KeysPlayer.SeekForward, this, SLOT(seekForward()));
+	addHotkey(settings.KeysPlayer.SeekBackward, this, SLOT(seekBackward()));
+	addHotkey(settings.KeysPlayer.VolumeUp, ui->video, SLOT(volumeUp()));
+	addHotkey(settings.KeysPlayer.VolumeDown, ui->video, SLOT(volumeDown()));
+	addHotkey(settings.KeysPlayer.FrameJump, this, SLOT(frameJump()));
+	addHotkey(settings.KeysPlayer.TimeJump, this, SLOT(timeJump()));
+	addHotkey(settings.KeysPlayer.NextFrame, ui->video, SLOT(nextFrame()));
+	addHotkey(settings.KeysPlayer.PrevFrame, ui->video, SLOT(prevFrame()));
+	addHotkey(settings.KeysPlayer.Time, ui->video, SLOT(toggleTime()));
+	addHotkey(settings.KeysPlayer.HueUp, ui->video, SLOT(hueUp()));
+	addHotkey(settings.KeysPlayer.HueDown, ui->video, SLOT(hueDown()));
+	addHotkey(settings.KeysPlayer.SaturationUp, ui->video, SLOT(saturationUp()));
+	addHotkey(settings.KeysPlayer.SaturationDown, ui->video, SLOT(saturationDown()));
+	addHotkey(settings.KeysPlayer.BrightnessUp, ui->video, SLOT(brightnessUp()));
+	addHotkey(settings.KeysPlayer.BrightnessDown, ui->video, SLOT(brightnessDown()));
+	addHotkey(settings.KeysPlayer.ContrastUp, ui->video, SLOT(contrastUp()));
+	addHotkey(settings.KeysPlayer.ContrastDown, ui->video, SLOT(contrastDown()));
 
 	{
 		QMap<const char *, const QObject *> slot;
 		slot.insert(SLOT(toggleMute()), ui->video);
 		slot.insert(SLOT(toggleMute()), ui->controls);
-		addHotkey(settings->KeysPlayer.Mute, slot);
+		addHotkey(settings.KeysPlayer.Mute, slot);
 	}
 
 	// jumper dialog
@@ -85,14 +85,16 @@ QString MainWindow::GetVersionInfo()
 
 void MainWindow::openFile()
 {
-	if (settings->Gui.RememberDir)
-		movieDir = settings->Gui.LastDir;
+	Settings &settings = Settings::GetInstance();
+	if (settings.Gui.RememberDir)
+		movieDir = settings.Gui.LastDir;
 	else
-		movieDir = settings->Gui.VideoDir;
+		movieDir = settings.Gui.VideoDir;
+
 	QString file = QFileDialog::getOpenFileName(this, tr("Open Video File"), movieDir);
 	if (!file.isEmpty())
 	{
-		settings->Gui.LastDir =  QFileInfo(file).path();
+		settings.Gui.LastDir =  QFileInfo(file).path();
 		playFile(file);
 	}
 }
@@ -107,17 +109,19 @@ void MainWindow::playFile(const QString &url)
 	{
 		ui->video->stop();
 		ui->video->setVideo(url);
+		Settings &settings = Settings::GetInstance();
 		if (subtitles.exists())
 		{
 			ui->video->setSubtitles(subfilename);
-			ui->video->setSubtitlesFont(settings->Subtitles.Font, settings->Subtitles.Encoding);
+			ui->video->setSubtitlesFont(settings.Subtitles.Font, settings.Subtitles.Encoding);
 			ui->editor->loadSubtitles(subfilename);
 		}
 
-		if (settings->Gui.RememberPosition)
-			ui->video->play(settings->getPosition(url));
+		if (settings.Gui.RememberPosition)
+			ui->video->play(settings.getPosition(url));
 		else
 			ui->video->play();
+
 	}
 }
 
@@ -142,7 +146,7 @@ void MainWindow::addHotkey(const QKeySequence &key, QMap<const char *, const QOb
 {
 	QShortcut *shortcut = new QShortcut(key, this);
 	hotkeys.push_back(shortcut);
-	foreach(const char *i, slot.keys())
+	foreach (const char *i, slot.keys())
 	{
 		connect(shortcut, SIGNAL(activated()), slot[i], i);
 	}
@@ -243,9 +247,10 @@ void MainWindow::fullScreen()
 {
 	setWindowState(windowState() ^ Qt::WindowFullScreen);
 
-	static bool controlBarState = !settings->Gui.ControlBar;
-	static bool statusBarState = !settings->Gui.StatusBar;
-	static bool editorState = !settings->Gui.Editor;
+	Settings &settings = Settings::GetInstance();
+	static bool controlBarState = !settings.Gui.ControlBar;
+	static bool statusBarState = !settings.Gui.StatusBar;
+	static bool editorState = !settings.Gui.Editor;
 
 	if (isFullScreen())
 	{
@@ -261,9 +266,9 @@ void MainWindow::fullScreen()
 		if (!controlBarState)
 			ui->controls->show();
 		if (!statusBarState)
-		    ui->statusBar->show();
+			ui->statusBar->show();
 		if (!editorState)
-		    ui->editor->show();
+			ui->editor->show();
 	}
 }
 
@@ -287,6 +292,18 @@ void MainWindow::timeJump()
 		position = QTime::fromString(jumper->getInput(), "h:m:s");
 		ui->video->gotoTime(position, true);
 	}
+}
+
+void MainWindow::seekBackward()
+{
+	Settings &settings = Settings::GetInstance();
+	ui->video->seekBackward(settings.Video.SeekShort);
+}
+
+void MainWindow::seekForward()
+{
+	Settings &settings = Settings::GetInstance();
+	ui->video->seekForward(settings.Video.SeekShort);
 }
 
 void MainWindow::videoUpdate()

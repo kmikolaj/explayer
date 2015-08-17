@@ -3,9 +3,11 @@
 #include <QDebug>
 // FIX if player
 VideoWidget::VideoWidget(QWidget *parent) :
-    QWidget(parent), player(nullptr)
+	QWidget(parent), player(nullptr)
 {
-	settings = Settings::GetSettings(this);
+	QPalette palette = QWidget::palette();
+	palette.setColor(QPalette::Background, Qt::black);
+	setPalette(palette);
 }
 
 void VideoWidget::createRenderer(const QString &output)
@@ -20,7 +22,9 @@ void VideoWidget::createRenderer(const QString &output)
 		connect(player, SIGNAL(positionChanged()), this, SLOT(onPositionChanged()));
 	}
 	else
+	{
 		player = nullptr;
+	}
 }
 
 bool VideoWidget::hasRenderer()
@@ -30,9 +34,21 @@ bool VideoWidget::hasRenderer()
 
 void VideoWidget::paintEvent(QPaintEvent *event)
 {
-	qDebug() << event->rect();
-	QPainter p(this);
-	p.fillRect(event->rect(), Qt::black);
+	Q_UNUSED(event)
+	QPainter painter(this);
+	painter.fillRect(rect(), palette().background());
+}
+
+void VideoWidget::resizeEvent(QResizeEvent *event)
+{
+	player->expose();
+	QWidget::resizeEvent(event);
+}
+
+void VideoWidget::showEvent(QShowEvent *event)
+{
+	setAttribute(Qt::WA_NoSystemBackground, true);
+	QWidget::showEvent(event);
 }
 
 void VideoWidget::onPositionChanged()
@@ -73,7 +89,7 @@ void VideoWidget::seek(int seconds)
 
 void VideoWidget::gotoFrame(qint32 frame, bool pause)
 {
-	if (player->canSeek())
+	if (player->isSeekable())
 	{
 		if (player->duration().Time > QTime(0, 0))
 		{
@@ -87,7 +103,7 @@ void VideoWidget::gotoFrame(qint32 frame, bool pause)
 
 void VideoWidget::gotoTime(const QTime &time, bool pause)
 {
-	if (player->canSeek())
+	if (player->isSeekable())
 	{
 		if (player->duration().Time > QTime(0, 0))
 		{
@@ -126,7 +142,7 @@ void VideoWidget::setSubtitlesFont(const QString &font, const QString &encoding)
 
 void VideoWidget::nextFrame()
 {
-	if (player->canSeek())
+	if (player->isSeekable())
 	{
 		gotoFrame(player->position().Frame + 1, true);
 	}
@@ -134,31 +150,31 @@ void VideoWidget::nextFrame()
 
 void VideoWidget::prevFrame()
 {
-	if (player->canSeek())
+	if (player->isSeekable())
 	{
 		gotoFrame(player->position().Frame - 1, true);
 	}
 }
 
-void VideoWidget::seekForward()
+void VideoWidget::seekForward(int range)
 {
-	if (player->canSeek())
+	if (player->isSeekable())
 	{
-		seek(settings->Video.SeekShort);
+		seek(range);
 	}
 }
 
-void VideoWidget::seekBackward()
+void VideoWidget::seekBackward(int range)
 {
-	if (player->canSeek())
+	if (player->isSeekable())
 	{
-		seek(-1 * settings->Video.SeekShort);
+		seek(-range);
 	}
 }
 
 void VideoWidget::seekFrame(qint32 frame)
 {
-	if (player->canSeek())
+	if (player->isSeekable())
 	{
 		gotoFrame(frame, false);
 	}
