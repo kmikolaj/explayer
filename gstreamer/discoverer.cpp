@@ -102,7 +102,11 @@ void Discoverer::on_discovered(GstDiscoverer *discoverer, GstDiscovererInfo *inf
 void Discoverer::on_finished(GstDiscoverer *discoverer, Metadata **meta)
 {
 	Q_UNUSED(discoverer);
-	emit(*meta)->updated();
+	if (*meta)
+	{
+		// TOFIX
+		emit (*meta)->updated();
+	}
 }
 
 QString Discoverer::convert(const GValue &val)

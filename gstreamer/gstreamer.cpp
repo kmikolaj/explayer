@@ -2,6 +2,7 @@
 #include <glib.h>
 #include <QDebug>
 #include <QTimer>
+#include <QFileInfo>
 #include "discoverer.h"
 
 // temporary, options
@@ -34,14 +35,7 @@ Gstreamer::Gstreamer(QWidget *window)
 #endif
 
 		xwinid = surface->winId();
-
-#if GST_VERSION_MAJOR == 1
-		if (xwinid != 0)
-			gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
-#else
-		if (hasharddec && xwinid != 0)
-			gst_x_overlay_set_window_handle(GST_X_OVERLAY(pipeline), xwinid);
-#endif
+		setOverlay();
 
 		// add bus
 		GstBus *bus;
@@ -49,8 +43,9 @@ Gstreamer::Gstreamer(QWidget *window)
 		gst_bus_add_watch(bus, Gstreamer::busCallback, this);
 		gst_object_unref(bus);
 
+#if GST_VERSION_MAJOR == 1
 		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
-
+#endif
 		discoverer = gst_discoverer_new(5 * GST_SECOND, nullptr);
 
 		if (discoverer)
@@ -62,11 +57,6 @@ Gstreamer::Gstreamer(QWidget *window)
 
 		if (hasbalance)
 			balance = new Balance(pipeline, this);
-
-	qDebug() << "gstreamer const setAttr";
-//	surface->setAttribute(Qt::WA_NoSystemBackground, true);
-//	surface->setAttribute(Qt::WA_PaintOnScreen, true);
-
 	}
 	setHardwareAcceleration(hasharddec);
 }
@@ -85,9 +75,6 @@ Gstreamer::~Gstreamer()
 		g_object_unref(discoverer);
 	}
 
-	surface->setAttribute(Qt::WA_PaintOnScreen, false);
-	surface->setAttribute(Qt::WA_NoSystemBackground, false);
-
 	delete balance;
 	delete osd;
 }
@@ -104,8 +91,6 @@ void Gstreamer::setVideo(const QString &path)
 		{
 			qDebug() << "discovery fail";
 		}
-		qDebug() << "setVideo setAttr";
-		surface->setAttribute(Qt::WA_PaintOnScreen, true);
 	}
 }
 
@@ -148,7 +133,7 @@ void Gstreamer::setPosition(const qint32 frame)
 	seek(UTime(frame), GstSeekFlags(GST_SEEK_FLAG_ACCURATE | GST_SEEK_FLAG_SKIP));
 }
 
-GstState Gstreamer::state()
+GstState Gstreamer::state() const
 {
 	GstState state = GST_STATE_NULL;
 	if (pipeline)
@@ -191,13 +176,13 @@ gboolean Gstreamer::busCallback(GstBus *bus, GstMessage *msg, gpointer args)
 	{
 #if GST_VERSION_MAJOR != 1
 		if (gst_structure_has_name(gst_message_get_structure(msg), "prepare-xwindow-id"))
-	    {
-	        if (gst->xwinid != 0)
-	        {
-	            gst->xoverlay = GST_X_OVERLAY(GST_MESSAGE_SRC(msg));
-	            gst_x_overlay_set_window_handle(gst->xoverlay, gst->xwinid);
-	        }
-	    }
+		{
+			if (gst->xwinid != 0)
+			{
+				gst->xoverlay = GST_X_OVERLAY(GST_MESSAGE_SRC(msg));
+				gst_x_overlay_set_window_handle(gst->xoverlay, gst->xwinid);
+			}
+		}
 #endif
 		break;
 	}
@@ -247,7 +232,6 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 	case GST_STATE_NULL:
 		gst->positionTimer.stop();
 		emit gst->stateChanged(STOPPED);
-		gst->refresh();
 		break;
 	default:
 		break;
@@ -269,22 +253,19 @@ void Gstreamer::setHardwareAcceleration(bool enable)
 	}
 }
 
-bool Gstreamer::canSeek()
+bool Gstreamer::isSeekable() const
 {
 	GstState currentState = state();
 	return (currentState != GST_STATE_READY && currentState != GST_STATE_NULL);
 }
 
-void Gstreamer::refresh()
-{
-//	surface->setAttribute(Qt::WA_PaintOnScreen, false);
-	qDebug() << "REFRESH";
-//	surface->setAttribute(Qt::WA_NoSystemBackground, false);
-}
-
 QUrl Gstreamer::makeUrl(const QString &path)
 {
-	return QUrl::fromUserInput(path);
+	QRegExp re("[^/]*");
+	if (re.exactMatch(path))
+		return QUrl::fromUserInput(QFileInfo(path).absoluteFilePath());
+	else
+		return QUrl::fromUserInput(path);
 }
 
 void Gstreamer::play()
@@ -346,7 +327,6 @@ void Gstreamer::stop()
 	if (pipeline)
 	{
 		gst_element_set_state(pipeline, GST_STATE_NULL);
-		surface->setAttribute(Qt::WA_PaintOnScreen, false);
 		emit stateChanged(STOPPED);
 	}
 }
@@ -395,16 +375,24 @@ void Gstreamer::forceaspectratio()
 	if (pipeline)
 	{
 		aspectratio = !aspectratio;
+#if GST_VERSION_MAJOR == 1
 		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
+#else
+		GstElement *videosink = nullptr;
+		g_object_get(G_OBJECT(pipeline), "video-sink", &videosink, NULL);
+		g_object_set(G_OBJECT(videosink), "force-aspect-ratio", aspectratio, nullptr);
+#endif
 		if (aspectratio)
 		{
-			osd->setText("keep aspect ratio");
+			if (osd)
+				osd->setText("keep aspect ratio");
 		}
 		else
 		{
-			osd->setText("ignore aspect ratio");
+			if (osd)
+				osd->setText("ignore aspect ratio");
 		}
-		// set video ?
+		// redraw black bars
 		surface->update();
 	}
 }
@@ -417,12 +405,14 @@ void Gstreamer::togglesubtitles()
 	{
 		if (subtitles)
 		{
-			osd->setText("no subtitles");
+			if (osd)
+				osd->setText("no subtitles");
 			g_object_set(G_OBJECT(pipeline), "suburi", nullptr, nullptr);
 		}
 		else
 		{
-			osd->setText("subtitles");
+			if (osd)
+				osd->setText("subtitles");
 			g_object_set(G_OBJECT(pipeline), "suburi", sub.toEncoded().data(), nullptr);
 		}
 		subtitles = !subtitles;
@@ -595,9 +585,15 @@ void Gstreamer::expose()
 		}
 #endif
 	}
-//	else
-//	{
-//		QPainter p(this);
-//		p.fillRect(rect(), Qt::black);
-//	}
+}
+
+void Gstreamer::setOverlay()
+{
+#if GST_VERSION_MAJOR == 1
+	if (xwinid != 0)
+		gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
+#else
+	if (hasharddec && xwinid != 0)
+		gst_x_overlay_set_window_handle(GST_X_OVERLAY(pipeline), xwinid);
+#endif
 }

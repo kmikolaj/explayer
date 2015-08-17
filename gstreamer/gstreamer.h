@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QTimer>
 #include <QUrl>
+#include <QEvent>
 #include <gst/gst.h>
 #if GST_VERSION_MAJOR == 1
 #include <gst/video/videooverlay.h>
@@ -40,10 +41,11 @@ public:
 	double contrast() const;
 
 	void expose();
+	void setOverlay();
 	void setVideoArea(const QRect &rect);
 	void setHardwareAcceleration(bool enable);
 
-	bool canSeek();
+	bool isSeekable() const;
 
 private:
 	GstElement *pipeline;
@@ -61,7 +63,7 @@ private:
 
 	QUrl sub;
 
-	GstState state();
+	GstState state() const;
 	void refresh();
 
 	QUrl makeUrl(const QString &path);

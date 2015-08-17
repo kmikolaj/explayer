@@ -18,7 +18,7 @@ public:
 	virtual void setPosition(const QTime &pos) = 0;
 	virtual void setPosition(const qint32 frame) = 0;
 
-	virtual bool canSeek() = 0;
+	virtual bool isSeekable() const = 0;
 	virtual UTime position() const = 0;
 	virtual UTime duration() const = 0;
 	virtual double volume() const = 0;
