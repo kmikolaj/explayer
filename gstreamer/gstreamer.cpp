@@ -262,7 +262,7 @@ bool Gstreamer::isSeekable() const
 QUrl Gstreamer::makeUrl(const QString &path)
 {
 	QRegExp re("[^/]*");
-	if (re.exactMatch(path))
+	if (re.exactMatch(path) || path.startsWith("."))
 		return QUrl::fromUserInput(QFileInfo(path).absoluteFilePath());
 	else
 		return QUrl::fromUserInput(path);

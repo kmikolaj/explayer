@@ -99,11 +99,10 @@ void MainWindow::openFile()
 	}
 }
 
-void MainWindow::playFile(const QString &url)
+void MainWindow::playFile(const QString &path)
 {
-	QString local = QUrl(url).toLocalFile();
-	QString subfilename = local.left(local.lastIndexOf('.')) + ".txt"; // .sub .srt
-	QFile film(local);
+	QString subfilename = path.left(path.lastIndexOf('.')) + ".txt"; // .sub .srt
+	QFile film(path);
 	QFile subtitles(subfilename);
 	if (film.exists())
 	{
@@ -125,20 +124,9 @@ void MainWindow::playFile(const QString &url)
 	}
 }
 
-void MainWindow::playUrl(const QString &url)
+void MainWindow::startPlaying(const QString &path)
 {
-	QUrl uri(url);
-	if (uri.isValid())
-	{
-		ui->video->stop();
-		ui->video->setVideo(uri.toString());
-		ui->video->play();
-	}
-}
-
-void MainWindow::startPlaying(const QString &url)
-{
-	this->url = url;
+	this->url = path;
 	play();
 }
 
@@ -215,18 +203,7 @@ void MainWindow::play()
 
 void MainWindow::play(QString video)
 {
-	QUrl url(video);
-	if (url.isValid())
-	{
-		if (video.indexOf("://") < 0)
-		{
-			playFile(QUrl::fromLocalFile(video).toString());
-		}
-		else
-		{
-			playUrl(video);
-		}
-	}
+	playFile(video);
 }
 
 void MainWindow::toggleEditor()
