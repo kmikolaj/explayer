@@ -8,12 +8,7 @@ QT 		+= core gui widgets x11extras
 
 CONFIG += silent link_pkgconfig gst-1.0
 
-gst-1.0 {
 PKGCONFIG += xcb-dpms gstreamer-1.0 gstreamer-audio-1.0 gstreamer-video-1.0 gstreamer-pbutils-1.0
-}
-gst-0.10 {
-PKGCONFIG += xcb-dpms gstreamer-0.10 gstreamer-interfaces-0.10 gstreamer-pbutils-0.10
-}
 
 QMAKE_CXXFLAGS += -std=c++0x
 

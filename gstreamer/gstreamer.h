@@ -6,13 +6,8 @@
 #include <QUrl>
 #include <QEvent>
 #include <gst/gst.h>
-#if GST_VERSION_MAJOR == 1
 #include <gst/video/videooverlay.h>
 #include <gst/audio/streamvolume.h>
-#else
-#include <gst/interfaces/xoverlay.h>
-#include <gst/interfaces/streamvolume.h>
-#endif
 #include <gst/pbutils/gstdiscoverer.h>
 #include "player.h"
 #include "utime.h"
@@ -49,11 +44,7 @@ public:
 
 private:
 	GstElement *pipeline;
-#if GST_VERSION_MAJOR == 1
 	GstVideoOverlay *xoverlay;
-#else
-	GstXOverlay *xoverlay;
-#endif
 	GstDiscoverer *discoverer;
 
 	QTimer positionTimer;

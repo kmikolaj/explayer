@@ -2,11 +2,7 @@
 #define BALANCE_H
 
 #include <gst/gst.h>
-#if GST_VERSION_MAJOR == 1
 #include <gst/video/colorbalance.h>
-#else
-#include <gst/interfaces/colorbalance.h>
-#endif
 #include <QObject>
 #include <QMap>
 

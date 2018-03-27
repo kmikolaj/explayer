@@ -70,13 +70,8 @@ void Osd::init()
 
 	g_object_set(G_OBJECT(overlay), "text", "", nullptr);
 	g_object_set(G_OBJECT(overlay), "silent", false, nullptr);
-#if GST_VERSION_MAJOR == 1
 	g_object_set(G_OBJECT(overlay), "valignment", "top", nullptr);
 	g_object_set(G_OBJECT(overlay), "halignment", "right", nullptr);
-#else
-	g_object_set(G_OBJECT(overlay), "valign", "top", nullptr);
-	g_object_set(G_OBJECT(overlay), "halign", "right", nullptr);
-#endif
 	g_object_set(G_OBJECT(overlay), "shaded-background", true, nullptr);
 	g_object_set(G_OBJECT(time), "silent", !timeVisible, nullptr);
 

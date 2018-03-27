@@ -19,11 +19,7 @@ Gstreamer::Gstreamer(QWidget *window)
 	gst_init(nullptr, nullptr);
 	connect(&positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
 
-#if GST_VERSION_MAJOR == 1
 	pipeline = gst_element_factory_make("playbin", "player");
-#else
-	pipeline = gst_element_factory_make("playbin2", "player");
-#endif
 
 	if (pipeline)
 	{
@@ -43,9 +39,7 @@ Gstreamer::Gstreamer(QWidget *window)
 		gst_bus_add_watch(bus, Gstreamer::busCallback, this);
 		gst_object_unref(bus);
 
-#if GST_VERSION_MAJOR == 1
 		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
-#endif
 		discoverer = gst_discoverer_new(5 * GST_SECOND, nullptr);
 
 		if (discoverer)
@@ -378,13 +372,7 @@ void Gstreamer::forceaspectratio()
 	if (pipeline)
 	{
 		aspectratio = !aspectratio;
-#if GST_VERSION_MAJOR == 1
 		g_object_set(G_OBJECT(pipeline), "force-aspect-ratio", aspectratio, nullptr);
-#else
-		GstElement *videosink = nullptr;
-		g_object_get(G_OBJECT(pipeline), "video-sink", &videosink, NULL);
-		g_object_set(G_OBJECT(videosink), "force-aspect-ratio", aspectratio, nullptr);
-#endif
 		if (aspectratio)
 		{
 			if (osd)
@@ -458,11 +446,7 @@ UTime Gstreamer::position() const
 	GstFormat fmt = GST_FORMAT_TIME;
 	gint64 value = 0;
 
-#if GST_VERSION_MAJOR == 1
 	if (gst_element_query_position(pipeline, fmt, &value))
-#else
-	if (gst_element_query_position(pipeline, &fmt, &value))
-#endif
 		return UTime(qint64(value));
 	else
 		return UTime();
@@ -472,11 +456,7 @@ UTime Gstreamer::duration() const
 {
 	GstFormat fmt = GST_FORMAT_TIME;
 	gint64 value = 0;
-#if GST_VERSION_MAJOR == 1
 	if (gst_element_query_duration(pipeline, fmt, &value))
-#else
-	if (gst_element_query_duration(pipeline, &fmt, &value))
-#endif
 		return UTime(qint64(value));
 	else
 		return UTime();
@@ -559,44 +539,25 @@ double Gstreamer::getBalanceChannel(const QString &name) const
 
 void Gstreamer::setVideoArea(const QRect &rect)
 {
-#if GST_VERSION_MAJOR == 1
 	if (GST_IS_VIDEO_OVERLAY(xoverlay))
 	{
 		gst_video_overlay_set_render_rectangle(GST_VIDEO_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(), rect.height());
 	}
-#else
-	if (GST_IS_X_OVERLAY(xoverlay))
-	{
-		gst_x_overlay_set_render_rectangle(GST_X_OVERLAY(xoverlay), rect.left(), rect.top(), rect.width(), rect.height());
-	}
-#endif
 }
 
 void Gstreamer::expose()
 {
 	if (state() == GST_STATE_PLAYING || state() == GST_STATE_PAUSED)
 	{
-#if GST_VERSION_MAJOR == 1
 		if (GST_IS_VIDEO_OVERLAY(xoverlay))
 		{
 			gst_video_overlay_expose(xoverlay);
 		}
-#else
-		if (GST_IS_X_OVERLAY(xoverlay))
-		{
-			gst_x_overlay_expose(xoverlay);
-		}
-#endif
 	}
 }
 
 void Gstreamer::setOverlay()
 {
-#if GST_VERSION_MAJOR == 1
 	if (xwinid != 0)
 		gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(pipeline), xwinid);
-#else
-	if (hasharddec && xwinid != 0)
-		gst_x_overlay_set_window_handle(GST_X_OVERLAY(pipeline), xwinid);
-#endif
 }
