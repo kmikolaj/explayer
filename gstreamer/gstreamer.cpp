@@ -10,7 +10,7 @@ bool subtitles = true;
 bool aspectratio = true;
 bool hasosd = true;
 bool hasbalance = true;
-bool hasharddec = false;
+bool hasharddec = true;
 
 Gstreamer::Gstreamer(QWidget *window)
 	: PlayerInterface(window), pipeline(nullptr), xoverlay(nullptr), discoverer(nullptr),
@@ -206,7 +206,10 @@ void Gstreamer::handlePipelineStateChange(Gstreamer *gst, GstMessage *msg)
 	{
 	case GST_STATE_PLAYING:
 		//start the timer when the pipeline starts playing
-		gst->positionTimer.start(int(1000.0 / gst->metadata->getFramerate(1)));
+		if (gst->metadata)
+		{
+			gst->positionTimer.start(int(1000.0 / gst->metadata->getFramerate(1)));
+		}
 		emit gst->stateChanged(PLAYING);
 		break;
 	case GST_STATE_PAUSED:
