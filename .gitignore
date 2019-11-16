@@ -1,5 +1,8 @@
 .*
 !.gitignore
+!.gitattributes
+!.clang-format
+!.clang-tidy
 *.pro.user
 *.pro.user.*
 CMakeLists.txt.user
