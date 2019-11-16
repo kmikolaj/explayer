@@ -1,7 +1,13 @@
 .*
 !.gitignore
-ExPlayer.pro.user
-ExPlayer.pro.user.*
+*.pro.user
+*.pro.user.*
+CMakeLists.txt.user
+CMakeLists.txt.user.*
 cscope.out
 todo
 *.swp
+bin/*
+!bin/README
+cmake/*
+!cmake/README

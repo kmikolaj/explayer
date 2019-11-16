@@ -9,8 +9,8 @@
 #include <gst/video/videooverlay.h>
 #include <gst/audio/streamvolume.h>
 #include <gst/pbutils/gstdiscoverer.h>
-#include "player.h"
-#include "utime.h"
+#include <player.h>
+#include <utime.h>
 #include "osd.h"
 #include "balance.h"
 
